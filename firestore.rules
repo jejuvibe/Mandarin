@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 해찬솔 농원 주문관리: orders, customers, settings 컬렉션
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+    match /customers/{customerId} {
+      allow read, write: if true;
+    }
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+    
+    // 전체 접근 허용 (개인 농원 단독 사용 시)
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

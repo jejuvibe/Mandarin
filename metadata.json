@@ -1,0 +1,6 @@
+{
+  "name": "제주 감귤 주문관리",
+  "description": "스마트 텍스트 파싱, 단골 주소록, 배송조회, 택배 항목별 복사, 발송/계좌 안내문 복사, 매출 및 택배비 순수익을 간편하게 관리하는 감귤 주문 웹앱",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

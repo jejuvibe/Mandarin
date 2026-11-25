@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-midnight: #1b1430;
+  --color-denim: #5c7eb1;
+  --color-teal: #62a4bc;
+  --color-blush: #f7e2e2;
+  --color-blush-light: #fdf6f5;
+  --color-blush-hover: #f7dddb;
+}
+
+@layer base {
+  body {
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #fcf9f8;
+    color: #1b1430;
+  }
+}
