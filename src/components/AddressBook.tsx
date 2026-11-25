@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Search, UserPlus, Phone, MapPin, ShoppingBag, Calendar, Copy, Check, Edit2, Trash2, Plus, Users } from 'lucide-react';
-import { Customer } from '../types';
+import { Customer, Order } from '../types';
 import { copyToClipboard } from '../utils/clipboard';
+import { cleanAddressForCourier } from '../utils/courier';
 import { useToast } from './Toast';
 
 interface AddressBookProps {
   customers: Customer[];
+  orders?: Order[];
   onSelectCustomerForOrder: (customer: Customer) => void;
   onSaveCustomer: (customer: Customer) => void;
   onDeleteCustomer: (id: string) => void;
@@ -13,6 +15,7 @@ interface AddressBookProps {
 
 export const AddressBook: React.FC<AddressBookProps> = ({
   customers,
+  orders = [],
   onSelectCustomerForOrder,
   onSaveCustomer,
   onDeleteCustomer,
@@ -121,88 +124,101 @@ export const AddressBook: React.FC<AddressBookProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
-                {filteredCustomers.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="hover:bg-[#f7e2e2]/30 transition-colors"
-                  >
-                    {/* 1. 성함 */}
-                    <td className="py-3 px-3.5 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-[#264c67] text-xs sm:text-sm">
-                          {customer.name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleCopy(e, customer.name, `name-${customer.id}`, '성함이')}
-                          className="text-[10px] px-1 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs"
-                          title="이름 복사"
-                        >
-                          {copiedKey === `name-${customer.id}` ? (
-                            <Check className="w-2.5 h-2.5 text-[#5c7eb1]" />
-                          ) : (
-                            <Copy className="w-2.5 h-2.5 text-slate-400" />
-                          )}
-                        </button>
-                        {customer.orderCount > 1 && (
-                          <span className="text-[10px] font-bold text-[#264c67] bg-[#f7e2e2] border border-[#ecd2d2] px-1.5 py-0.2 rounded-full">
-                            {customer.orderCount}회
+                {filteredCustomers.map((customer) => {
+                  const customerOrders = orders.filter((o) => {
+                    const oPhone = o.phone.replace(/[^0-9]/g, '');
+                    const cPhone = customer.phone.replace(/[^0-9]/g, '');
+                    return (oPhone && cPhone && oPhone === cPhone) || o.customerName === customer.name;
+                  });
+                  const displayTotalSpent = customerOrders.length > 0
+                    ? customerOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+                    : (customer.totalSpent || 0);
+                  const displayOrderCount = customerOrders.length > 0
+                    ? customerOrders.length
+                    : (customer.orderCount || 0);
+
+                  return (
+                    <tr
+                      key={customer.id}
+                      className="hover:bg-[#f7e2e2]/30 transition-colors"
+                    >
+                      {/* 1. 성함 */}
+                      <td className="py-3 px-3.5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[#264c67] text-xs sm:text-sm">
+                            {customer.name}
                           </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* 2. 전화번호 */}
-                    <td className="py-3 px-3.5 whitespace-nowrap">
-                      <div className="flex items-center justify-between gap-1 font-mono">
-                        <span className="text-xs font-semibold text-slate-800">
-                          {customer.phone}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleCopy(e, customer.phone, `phone-${customer.id}`, '전화번호가')}
-                          className="text-[10px] px-1 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs shrink-0"
-                          title="전화번호 복사"
-                        >
-                          {copiedKey === `phone-${customer.id}` ? (
-                            <Check className="w-2.5 h-2.5 text-[#5c7eb1]" />
-                          ) : (
-                            <Copy className="w-2.5 h-2.5 text-slate-400" />
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopy(e, customer.name, `name-${customer.id}`, '성함이')}
+                            className="text-[10px] px-1 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs"
+                            title="이름 복사"
+                          >
+                            {copiedKey === `name-${customer.id}` ? (
+                              <Check className="w-2.5 h-2.5 text-[#5c7eb1]" />
+                            ) : (
+                              <Copy className="w-2.5 h-2.5 text-slate-400" />
+                            )}
+                          </button>
+                          {displayOrderCount > 1 && (
+                            <span className="text-[10px] font-bold text-[#264c67] bg-[#f7e2e2] border border-[#ecd2d2] px-1.5 py-0.2 rounded-full">
+                              {displayOrderCount}회
+                            </span>
                           )}
-                        </button>
-                      </div>
-                    </td>
+                        </div>
+                      </td>
 
-                    {/* 3. 배송지 주소 */}
-                    <td className="py-3 px-3.5">
-                      <div className="flex items-start justify-between gap-1.5 group">
-                        <span className="text-xs text-slate-800 leading-snug break-keep">
-                          {customer.address}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleCopy(e, customer.address, `addr-${customer.id}`, '주소가')}
-                          className="text-[10px] px-1 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs shrink-0"
-                          title="주소 복사"
-                        >
-                          {copiedKey === `addr-${customer.id}` ? (
-                            <Check className="w-2.5 h-2.5 text-[#5c7eb1]" />
-                          ) : (
-                            <Copy className="w-2.5 h-2.5 text-slate-400" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
+                      {/* 2. 전화번호 */}
+                      <td className="py-3 px-3.5 whitespace-nowrap">
+                        <div className="flex items-center justify-between gap-1 font-mono">
+                          <span className="text-xs font-semibold text-slate-800">
+                            {customer.phone}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopy(e, customer.phone, `phone-${customer.id}`, '전화번호가')}
+                            className="text-[10px] px-1 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs shrink-0"
+                            title="전화번호 복사"
+                          >
+                            {copiedKey === `phone-${customer.id}` ? (
+                              <Check className="w-2.5 h-2.5 text-[#5c7eb1]" />
+                            ) : (
+                              <Copy className="w-2.5 h-2.5 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
 
-                    {/* 4. 누적 주문/금액 */}
-                    <td className="py-3 px-3.5 whitespace-nowrap text-right">
-                      <div className="font-bold text-[#264c67] font-mono text-xs">
-                        {customer.totalSpent.toLocaleString('ko-KR')}원
-                      </div>
-                      <div className="text-[10px] text-slate-400 font-medium">
-                        총 {customer.orderCount}건 주문
-                      </div>
-                    </td>
+                      {/* 3. 배송지 주소 */}
+                      <td className="py-3 px-3.5">
+                        <div className="flex items-start justify-between gap-1.5 group">
+                          <span className="text-xs text-slate-800 leading-snug break-keep">
+                            {cleanAddressForCourier(customer.address, customer.name, customer.phone)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopy(e, cleanAddressForCourier(customer.address, customer.name, customer.phone), `addr-${customer.id}`, '주소가')}
+                            className="text-[10px] px-1 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs shrink-0"
+                            title="주소 복사"
+                          >
+                            {copiedKey === `addr-${customer.id}` ? (
+                              <Check className="w-2.5 h-2.5 text-[#5c7eb1]" />
+                            ) : (
+                              <Copy className="w-2.5 h-2.5 text-slate-400" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* 4. 누적 주문/금액 */}
+                      <td className="py-3 px-3.5 whitespace-nowrap text-right">
+                        <div className="font-bold text-[#264c67] font-mono text-xs">
+                          {displayTotalSpent.toLocaleString('ko-KR')}원
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium">
+                          총 {displayOrderCount}건 주문
+                        </div>
+                      </td>
 
                     {/* 5. 최근 주문일 */}
                     <td className="py-3 px-3.5 whitespace-nowrap text-center text-xs text-slate-600 font-mono">
@@ -257,7 +273,8 @@ export const AddressBook: React.FC<AddressBookProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>

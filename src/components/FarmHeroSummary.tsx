@@ -24,9 +24,9 @@ export const FarmHeroSummary: React.FC<FarmHeroSummaryProps> = ({
   return (
     /* Compact banner: 귤주문관리 옆에 주문안내문자, 주문접수 나란히 배치하여 슬림하고 깔끔하게 */
     <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-[#f7e2e2] text-slate-800 shadow-xs border border-[#ecd2d2]">
-      <div className="relative z-10 px-3.5 py-2.5 sm:px-5 sm:py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 sm:gap-4">
+      <div className="relative z-10 px-2.5 py-1.5 sm:px-4 sm:py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-3">
         {/* Left: 귤주문관리 + 주문안내문자 + 주문접수 나란히 배치 */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-base select-none leading-none">🍊</span>
             <h1 className="text-sm sm:text-base font-bold text-[#1f3d59] tracking-tight whitespace-nowrap">

@@ -212,6 +212,46 @@ export function parseKoreanOrderMessage(rawText: string): ParsedOrderData {
     }
   }
 
+  // 9. Final Address Polish: Ensure customerName, phone number, and quantities are NEVER left inside address
+  if (result.address) {
+    let cleanAddr = result.address;
+
+    // Strip any phone number patterns from address (formatted & unformatted)
+    cleanAddr = cleanAddr.replace(/01[016789]\d{7,8}/g, ' ');
+    cleanAddr = cleanAddr.replace(/(?:01[016789]|02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4}/g, ' ');
+
+    // Strip citrus quantity mentions from address (e.g. 10키로2박스, 10kg 1박스, 5kg 2상자, 2박스)
+    cleanAddr = cleanAddr.replace(/(?:\d+)\s*(?:kg|kilo|키로|킬로)\s*[:=]?\s*(?:\d+)?\s*(?:박스|상자|개|EA)?/gi, ' ');
+    cleanAddr = cleanAddr.replace(/(?:\d+)\s*(?:박스|상자)/gi, ' ');
+    cleanAddr = cleanAddr.replace(/\s+/g, ' ').trim();
+
+    // Clean honorifics from customerName
+    if (result.customerName) {
+      result.customerName = result.customerName.replace(/님|고객|귀하/g, '').trim();
+      const escapedName = result.customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      cleanAddr = cleanAddr.replace(new RegExp(`(?:\\s+|^)${escapedName}(?:\\s*(?:님|고객|귀하))?$`, 'i'), '').trim();
+      cleanAddr = cleanAddr.replace(new RegExp(`^${escapedName}(?:\\s*(?:님|고객|귀하))?\\s+`, 'i'), '').trim();
+    } else {
+      // If customerName was NOT extracted yet, detect trailing 2-4 hangul word at the end of address
+      const trailingWordMatch = cleanAddr.match(/\s+([가-힣]{2,4})(?:님|고객|귀하)?$/);
+      if (trailingWordMatch) {
+        const candidate = trailingWordMatch[1];
+        if (!NON_NAME_WORDS.has(candidate) && !KOREAN_REGIONS.includes(candidate)) {
+          if (!/(시|군|구|읍|면|동|리|로|길|호|층|차|통|반|번지|마을|단지|상가|아파트|빌라|오피스텔)$/.test(candidate)) {
+            result.customerName = candidate;
+            cleanAddr = cleanAddr.slice(0, trailingWordMatch.index).trim();
+          }
+        }
+      }
+    }
+
+    // Remove any trailing open parenthesis/bracket/comma left behind after splitting
+    cleanAddr = cleanAddr.replace(/[\(\[\,\-\.]+$/g, '').trim();
+    cleanAddr = cleanAddr.replace(/\s+/g, ' ');
+
+    result.address = cleanAddr;
+  }
+
   // Calculate confidence score (0 to 100)
   let score = 0;
   if (result.customerName) score += 30;
@@ -237,6 +277,8 @@ function cleanAddressAndExtractMeta(addr: string): {
     .replace(/^배송지\s*[:：]?\s*/i, '')
     .replace(/^배송주소\s*[:：]?\s*/i, '')
     .replace(/^수령주소\s*[:：]?\s*/i, '')
+    .replace(/01[016789]\d{7,8}/g, ' ')
+    .replace(/(?:01[016789]|02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4}/g, ' ')
     .trim();
 
   let extractedPostalCode: string | undefined;

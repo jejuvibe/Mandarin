@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check, MessageSquare, Edit, Trash2, FileText } from 'lucide-react';
 import { Order, OrderStatus, AppSettings } from '../types';
 import { copyToClipboard } from '../utils/clipboard';
+import { cleanAddressForCourier } from '../utils/courier';
 import { useToast } from './Toast';
 
 interface OrderTableProps {
@@ -200,13 +201,13 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                     <div className="flex items-start gap-1.5">
                       <span
                         className="line-clamp-2 leading-relaxed text-slate-700 select-all break-keep"
-                        title={order.address}
+                        title={cleanAddressForCourier(order.address, order.customerName, order.phone)}
                       >
-                        {order.address}
+                        {cleanAddressForCourier(order.address, order.customerName, order.phone)}
                       </span>
                       <button
                         type="button"
-                        onClick={(e) => handleCellCopy(e, order.address, `addr-${order.id}`, '주소가')}
+                        onClick={(e) => handleCellCopy(e, cleanAddressForCourier(order.address, order.customerName, order.phone), `addr-${order.id}`, '주소가')}
                         className="text-[10px] p-0.5 mt-0.5 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 transition-colors inline-flex items-center shadow-2xs shrink-0"
                         title="주소 복사"
                       >
@@ -244,10 +245,12 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                       {order.totalAmount.toLocaleString('ko-KR')}원
                     </div>
                     <div
-                      className="text-[10px] text-[#5c7eb1] font-semibold"
+                      className={`text-[10px] font-semibold ${
+                        order.netProfit < 0 ? 'text-rose-600' : 'text-[#5c7eb1]'
+                      }`}
                       title={`택배비 -${order.shippingCost}원 / 박스비 -${order.boxCost || 0}원`}
                     >
-                      +{order.netProfit.toLocaleString('ko-KR')}원
+                      {order.netProfit > 0 ? '+' : ''}{order.netProfit.toLocaleString('ko-KR')}원
                     </div>
                   </td>
 

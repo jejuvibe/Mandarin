@@ -49,6 +49,58 @@ export function getTrackingUrl(carrierName: string, trackingNumber: string): str
 }
 
 /**
+ * Cleans an address string for courier dispatch or bulk copying:
+ * - Strips trailing phone numbers (e.g. 01038831378, 010-3883-1378)
+ * - Strips citrus quantities and box info (e.g. 10키로2박스, 5kg 1박스, 10kg, 2박스)
+ * - Strips recipient name from beginning or end of address if accidentally attached
+ * - Strips leading address prefix labels (주소:, 받는분: 등)
+ */
+export function cleanAddressForCourier(
+  address: string,
+  customerName?: string,
+  phone?: string
+): string {
+  if (!address) return '';
+  let cleaned = address.trim();
+
+  // 1. Strip phone numbers (both formatted and unformatted)
+  if (phone) {
+    const rawDigits = phone.replace(/[^0-9]/g, '');
+    if (rawDigits.length >= 8) {
+      cleaned = cleaned.replace(new RegExp(rawDigits, 'g'), ' ');
+    }
+    const cleanPhonePattern = phone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    cleaned = cleaned.replace(new RegExp(cleanPhonePattern, 'g'), ' ');
+  }
+  cleaned = cleaned.replace(/(?:01[016789]|02|0[3-6][1-5])[-.\s]?\d{3,4}[-.\s]?\d{4}/g, ' ');
+  cleaned = cleaned.replace(/01[016789]\d{7,8}/g, ' ');
+
+  // 2. Strip citrus quantities & box counts
+  cleaned = cleaned.replace(/(\d+\s*(?:키로|킬로|kg|Kg|KG)\s*\d+\s*(?:박스|상자|box))/gi, ' ');
+  cleaned = cleaned.replace(/(\d+\s*(?:키로|킬로|kg|Kg|KG))/gi, ' ');
+  cleaned = cleaned.replace(/(\d+\s*(?:박스|상자|box))/gi, ' ');
+
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  // 3. Strip recipient name at beginning or end if accidentally duplicated
+  if (customerName && customerName.trim().length >= 2) {
+    const trimmedName = customerName.trim();
+    const escaped = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    cleaned = cleaned.replace(new RegExp('^' + escaped + '(?:님|고객님|고객|귀하)?(?:\\s+|$)', 'i'), '');
+    cleaned = cleaned.replace(new RegExp('(?:\\s+|^)' + escaped + '(?:님|고객님|고객|귀하)?$', 'i'), '');
+  }
+
+  // 4. Strip prefix labels
+  cleaned = cleaned.replace(/^(?:주소|배송지|배송지주소|받는곳|받는분)\s*[:：]\s*/i, '');
+
+  // 5. Clean up extra spaces and trailing punctuation
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  cleaned = cleaned.replace(/[,;\-\.]+$/, '').trim();
+
+  return cleaned;
+}
+
+/**
  * Format order for courier booking copy paste
  * e.g. 받는분: 홍길동 | 연락처: 010-1234-5678 | 주소: 제주 제주시 첨단로 123 | 배송메모: 부재 시 경비실
  */
@@ -58,10 +110,11 @@ export function formatCourierRow(
   address: string,
   memo?: string
 ): string {
+  const cleanAddr = cleanAddressForCourier(address, name, phone);
   const parts = [
     `받는분: ${name}`,
     `연락처: ${phone}`,
-    `주소: ${address}`,
+    `주소: ${cleanAddr}`,
   ];
   if (memo) {
     parts.push(`배송메모: ${memo}`);
@@ -81,7 +134,7 @@ export function generateCourierCSV(orders: Array<{
 }>): string {
   const header = ['받는분성함', '휴대전화', '배송지주소', '주문상품', '배송요청사항'].join(',');
   const rows = orders.map(o => {
-    const cleanAddr = `"${(o.address || '').replace(/"/g, '""')}"`;
+    const cleanAddr = `"${cleanAddressForCourier(o.address || '', o.customerName, o.phone).replace(/"/g, '""')}"`;
     const cleanItem = `"${(o.itemSummary || '').replace(/"/g, '""')}"`;
     const cleanMemo = `"${(o.memo || '').replace(/"/g, '""')}"`;
     return [o.customerName, o.phone, cleanAddr, cleanItem, cleanMemo].join(',');

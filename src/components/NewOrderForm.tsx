@@ -695,10 +695,18 @@ export const NewOrderForm: React.FC<NewOrderFormProps> = ({
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 최종 순수익
               </label>
-              <div className="text-base font-bold text-[#2d738d] font-mono">
-                +{netProfit.toLocaleString('ko-KR')}원
+              <div
+                className={`text-base font-bold font-mono ${
+                  netProfit < 0 ? 'text-rose-600' : 'text-[#2d738d]'
+                }`}
+              >
+                {netProfit > 0 ? '+' : ''}{netProfit.toLocaleString('ko-KR')}원
               </div>
-              <div className="text-[11px] text-[#2d738d] font-medium mt-1">
+              <div
+                className={`text-[11px] font-medium mt-1 ${
+                  netProfit < 0 ? 'text-rose-600' : 'text-[#2d738d]'
+                }`}
+              >
                 순수익률 {profitMargin}%
               </div>
             </div>

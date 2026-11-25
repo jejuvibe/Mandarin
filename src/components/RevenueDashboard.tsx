@@ -404,11 +404,25 @@ export const RevenueDashboard: React.FC<RevenueDashboardProps> = ({
             </div>
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-[#2d738d] font-mono tracking-tight">
-              +{totalNetProfit.toLocaleString('ko-KR')}
-              <span className="text-xs sm:text-sm font-medium text-[#2d738d] ml-1">원</span>
+            <div
+              className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
+                totalNetProfit < 0 ? 'text-rose-600' : 'text-[#2d738d]'
+              }`}
+            >
+              {totalNetProfit > 0 ? '+' : ''}{totalNetProfit.toLocaleString('ko-KR')}
+              <span
+                className={`text-xs sm:text-sm font-medium ml-1 ${
+                  totalNetProfit < 0 ? 'text-rose-600' : 'text-[#2d738d]'
+                }`}
+              >
+                원
+              </span>
             </div>
-            <div className="text-[11px] text-[#2d738d] font-medium mt-1">
+            <div
+              className={`text-[11px] font-medium mt-1 ${
+                totalNetProfit < 0 ? 'text-rose-600' : 'text-[#2d738d]'
+              }`}
+            >
               순수익률 {profitMargin}% (마진)
             </div>
           </div>
@@ -553,8 +567,12 @@ export const RevenueDashboard: React.FC<RevenueDashboardProps> = ({
                 </div>
                 <div className="p-3.5 bg-slate-50 flex justify-between text-sm">
                   <span className="font-bold text-[#1b1430]">최종 확정 순수익 (=)</span>
-                  <span className="font-black font-mono text-[#2d738d] text-base">
-                    +{totalNetProfit.toLocaleString('ko-KR')}원 ({profitMargin}%)
+                  <span
+                    className={`font-black font-mono text-base ${
+                      totalNetProfit < 0 ? 'text-rose-600' : 'text-[#2d738d]'
+                    }`}
+                  >
+                    {totalNetProfit > 0 ? '+' : ''}{totalNetProfit.toLocaleString('ko-KR')}원 ({profitMargin}%)
                   </span>
                 </div>
               </div>

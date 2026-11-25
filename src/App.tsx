@@ -192,15 +192,16 @@ function TangerineAppContent() {
     updatedPricing?: { price5kg: number; price10kg: number }
   ) => {
     // 1. Update orders list (replace or prepend)
-    setOrders((prev) => {
-      const idx = prev.findIndex((o) => o.id === savedOrder.id);
+    const nextOrders = (() => {
+      const idx = orders.findIndex((o) => o.id === savedOrder.id);
       if (idx >= 0) {
-        const copy = [...prev];
+        const copy = [...orders];
         copy[idx] = savedOrder;
         return copy;
       }
-      return [savedOrder, ...prev];
-    });
+      return [savedOrder, ...orders];
+    })();
+    setOrders(nextOrders);
 
     // Sync order to Firebase if configured
     if (isFirebaseConfigured()) {
@@ -232,6 +233,13 @@ function TangerineAppContent() {
         (c) => c.phone.replace(/[^0-9]/g, '') === cleanPhone || (c.name === savedOrder.customerName && cleanPhone.length > 8 && c.phone.replace(/[^0-9]/g, '').slice(-8) === cleanPhone.slice(-8))
       );
 
+      const custOrders = nextOrders.filter((o) => {
+        const oPhone = o.phone.replace(/[^0-9]/g, '');
+        return (cleanPhone && oPhone && oPhone === cleanPhone) || o.customerName === savedOrder.customerName;
+      });
+      const accurateTotalSpent = custOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      const accurateOrderCount = custOrders.length;
+
       let targetCustomer: Customer;
       if (existingIdx >= 0) {
         const existing = prev[existingIdx];
@@ -240,8 +248,8 @@ function TangerineAppContent() {
           name: savedOrder.customerName,
           phone: savedOrder.phone,
           address: savedOrder.address,
-          orderCount: existing.orderCount + (editingOrder ? 0 : 1),
-          totalSpent: existing.totalSpent + (editingOrder ? 0 : savedOrder.totalAmount),
+          orderCount: accurateOrderCount,
+          totalSpent: accurateTotalSpent,
           lastOrderedAt: savedOrder.createdAt.slice(0, 10),
           notes: savedOrder.memo ? (existing.notes ? `${existing.notes} / ${savedOrder.memo}` : savedOrder.memo) : existing.notes,
         };
@@ -257,8 +265,8 @@ function TangerineAppContent() {
           name: savedOrder.customerName,
           phone: savedOrder.phone,
           address: savedOrder.address,
-          orderCount: 1,
-          totalSpent: savedOrder.totalAmount,
+          orderCount: accurateOrderCount,
+          totalSpent: accurateTotalSpent,
           lastOrderedAt: savedOrder.createdAt.slice(0, 10),
           notes: savedOrder.memo,
         };
@@ -276,9 +284,40 @@ function TangerineAppContent() {
   };
 
   const handleDeleteOrder = (orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    const deletedOrder = orders.find((o) => o.id === orderId);
+    const nextOrders = orders.filter((o) => o.id !== orderId);
+    setOrders(nextOrders);
     if (isFirebaseConfigured()) {
       deleteOrderFromDb(orderId).then((r) => r && checkFirebasePermissionError(r.error));
+    }
+
+    if (deletedOrder) {
+      setCustomers((prev) => {
+        const cleanPhone = deletedOrder.phone.replace(/[^0-9]/g, '');
+        const targetIdx = prev.findIndex((c) => {
+          const cPhone = c.phone.replace(/[^0-9]/g, '');
+          return (cleanPhone && cPhone && cleanPhone === cPhone) || c.name === deletedOrder.customerName;
+        });
+        if (targetIdx >= 0) {
+          const existing = prev[targetIdx];
+          const remainingCustOrders = nextOrders.filter((o) => {
+            const oPhone = o.phone.replace(/[^0-9]/g, '');
+            return (cleanPhone && oPhone && cleanPhone === oPhone) || o.customerName === deletedOrder.customerName;
+          });
+          const updatedCustomer: Customer = {
+            ...existing,
+            orderCount: remainingCustOrders.length,
+            totalSpent: remainingCustOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+          };
+          const updatedList = [...prev];
+          updatedList[targetIdx] = updatedCustomer;
+          if (isFirebaseConfigured()) {
+            saveCustomerToDb(updatedCustomer).then((r) => r && checkFirebasePermissionError(r.error));
+          }
+          return updatedList;
+        }
+        return prev;
+      });
     }
   };
 
@@ -461,7 +500,7 @@ function TangerineAppContent() {
       />
 
       {/* Main Content Area */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
+      <main className="max-w-6xl mx-auto px-2.5 sm:px-6 pt-2 sm:pt-4 space-y-2.5 sm:space-y-4">
         {/* Farm Hero & Today Summary Banner */}
         {currentTab === 'orders' && (
           <FarmHeroSummary
@@ -525,6 +564,7 @@ function TangerineAppContent() {
         {currentTab === 'customers' && (
           <AddressBook
             customers={customers}
+            orders={orders}
             onSelectCustomerForOrder={handleSelectCustomerForOrder}
             onSaveCustomer={handleSaveCustomer}
             onDeleteCustomer={handleDeleteCustomer}

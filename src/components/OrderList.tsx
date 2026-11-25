@@ -73,10 +73,12 @@ export const OrderList: React.FC<OrderListProps> = ({
     return true;
   });
 
-  // Count orders in 'order_received' status (including legacy preparing/in_transit)
-  const receivedOrdersCount = filteredOrders.filter(
+  // Count orders by status
+  const paymentPendingCount = orders.filter((o) => o.status === 'payment_pending').length;
+  const receivedOrdersCount = orders.filter(
     (o) => o.status === 'order_received' || o.status === 'preparing' || o.status === 'in_transit'
   ).length;
+  const deliveredCount = orders.filter((o) => o.status === 'delivered').length;
 
   // Bulk copy only orders that are in 'order_received' status (User requirement)
   const handleBulkCopy = async () => {
@@ -120,78 +122,81 @@ export const OrderList: React.FC<OrderListProps> = ({
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Search & Quick Actions Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+      <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-xs space-y-2 sm:space-y-3">
         {/* Search Input */}
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="주문 검색 (이름, 전화번호, 주소, 송장번호)"
-            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc]"
+            className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg sm:rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc]"
           />
         </div>
 
-        {/* Status, Season & Date Filter Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-          {/* Status Buttons: 입금대기, 주문접수, 배송완료 (배송중/배송준비중 제거) */}
-          <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setStatusFilter('all')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'all'
-                  ? 'bg-[#5c7eb1] text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              전체 ({orders.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('payment_pending')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'payment_pending'
-                  ? 'bg-rose-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              입금대기 ({orders.filter((o) => o.status === 'payment_pending').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('order_received')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'order_received'
-                  ? 'bg-[#487294] text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              주문접수 ({orders.filter((o) => o.status === 'order_received' || o.status === 'preparing' || o.status === 'in_transit').length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('delivered')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'delivered'
-                  ? 'bg-[#264c67] text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              배송완료 ({orders.filter((o) => o.status === 'delivered').length})
-            </button>
-          </div>
+        {/* Status Buttons: 4 columns, single line with whitespace-nowrap so numbers never wrap down */}
+        <div className="grid grid-cols-4 gap-1 sm:gap-1.5 w-full">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('all')}
+            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
+              statusFilter === 'all'
+                ? 'bg-[#5c7eb1] text-white shadow-2xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <span>전체</span>
+            <span className="font-mono text-[10px] sm:text-[11px]">({orders.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('payment_pending')}
+            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
+              statusFilter === 'payment_pending'
+                ? 'bg-rose-600 text-white shadow-2xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <span>입금대기</span>
+            <span className="font-mono text-[10px] sm:text-[11px]">({paymentPendingCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('order_received')}
+            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
+              statusFilter === 'order_received'
+                ? 'bg-[#487294] text-white shadow-2xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <span>주문접수</span>
+            <span className="font-mono text-[10px] sm:text-[11px]">({receivedOrdersCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('delivered')}
+            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
+              statusFilter === 'delivered'
+                ? 'bg-[#264c67] text-white shadow-2xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <span>배송완료</span>
+            <span className="font-mono text-[10px] sm:text-[11px]">({deliveredCount})</span>
+          </button>
+        </div>
 
-          {/* Season & Date Filter & Bulk Copy */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Season Selector (주문내역에서는 조회 전용) */}
+        {/* Season & Date Filter & Bulk Copy Row */}
+        <div className="flex items-center justify-between gap-1.5 flex-wrap pt-2 border-t border-slate-100 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Season Selector */}
             <select
               value={seasonFilter}
               onChange={(e) => setSeasonFilter(e.target.value)}
-              className="p-1 text-xs rounded border border-slate-200 font-medium bg-slate-50 text-slate-800"
+              className="py-1 px-1.5 text-xs rounded-lg border border-slate-200 font-medium bg-slate-50 text-slate-800 outline-none"
             >
               <option value="all">모든 시즌</option>
               {availableSeasons.map((sk) => (
@@ -213,7 +218,7 @@ export const OrderList: React.FC<OrderListProps> = ({
                     // fallback
                   }
                 }}
-                className="px-2 py-1 text-xs rounded-lg border border-slate-200 bg-white font-sans text-slate-800 hover:border-[#5c7eb1] cursor-pointer shadow-2xs outline-none"
+                className="px-1.5 py-1 text-xs rounded-lg border border-slate-200 bg-white font-sans text-slate-800 hover:border-[#5c7eb1] cursor-pointer shadow-2xs outline-none"
                 title="클릭하여 달력 선택 또는 날짜 직접 입력"
               />
               {dateFilter && (
@@ -226,20 +231,20 @@ export const OrderList: React.FC<OrderListProps> = ({
                 </button>
               )}
             </div>
-
-            <button
-              type="button"
-              onClick={handleBulkCopy}
-              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-[#f7e2e2] hover:bg-[#eed7d7] text-[#264c67] border border-[#ecd2d2] transition-colors shadow-2xs"
-              title="주문접수 상태인 주문만 골라서 택배 접수용 1줄 텍스트로 일괄 복사합니다."
-            >
-              <Copy className="w-3.5 h-3.5 text-[#5c7eb1]" />
-              <span>택배정보 일괄복사</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#5c7eb1] text-[11px] font-medium text-white tracking-normal font-sans leading-none">
-                주문접수 {receivedOrdersCount}건
-              </span>
-            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleBulkCopy}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#f7e2e2] hover:bg-[#eed7d7] text-[#264c67] border border-[#ecd2d2] transition-colors shadow-2xs whitespace-nowrap ml-auto"
+            title="주문접수 상태인 주문만 골라서 택배 접수용 1줄 텍스트로 일괄 복사합니다."
+          >
+            <Copy className="w-3.5 h-3.5 text-[#5c7eb1]" />
+            <span>택배정보 일괄복사</span>
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#5c7eb1] text-[10px] font-medium text-white tracking-normal font-sans leading-none">
+              {receivedOrdersCount}건
+            </span>
+          </button>
         </div>
       </div>
 

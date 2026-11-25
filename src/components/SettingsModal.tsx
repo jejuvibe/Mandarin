@@ -412,16 +412,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 전체 데이터 백업 (JSON 다운로드)
               </button>
 
-              <a
-                href="./tangerine-order-app.zip"
-                download="haechansol-order-app.zip"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors"
-                title="깃허브에 업로드할 전체 소스코드 압축파일 다운로드"
-              >
-                <Download className="w-3.5 h-3.5 text-blue-600" />
-                깃허브 업로드용 전체 소스코드(ZIP) 다운로드
-              </a>
-
               <label className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer transition-colors">
                 <Upload className="w-3.5 h-3.5 text-slate-500" />
                 백업 파일 복원
