@@ -9,13 +9,11 @@ import {
   Download,
   Upload,
   Cloud,
-  Share2,
 } from 'lucide-react';
 import { AppSettings, Order, Customer } from '../types';
 import { DEFAULT_SETTINGS } from '../data/initialData';
 import { COURIERS } from '../utils/courier';
 import { useToast } from './Toast';
-import { copyToClipboard } from '../utils/clipboard';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -344,33 +342,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   required
                 />
               </div>
-            </div>
-
-            {/* 웹앱 주소 공유 */}
-            <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <Share2 className="w-4 h-4 text-[#5c7eb1] shrink-0" />
-                  <p className="text-xs font-bold text-slate-800">해찬솔 감귤 주문 관리 주소 공유</p>
-                </div>
-                <p className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
-                  {window.location.origin}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={async () => {
-                  const shareText = `해찬솔 감귤 주문 관리\n${window.location.origin}`;
-                  const ok = await copyToClipboard(shareText);
-                  if (ok) {
-                    showToast('주소가 복사되었습니다. (해찬솔 감귤 주문 관리 + 주소)', 'success');
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#5c7eb1] hover:bg-[#4d6c99] rounded-lg transition-colors shrink-0 shadow-2xs active:scale-98 cursor-pointer"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>주소 복사</span>
-              </button>
             </div>
           </div>
 

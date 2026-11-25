@@ -1,8 +1,6 @@
 import React from 'react';
-import { Settings, Share2 } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { AppSettings } from '../types';
-import { copyToClipboard } from '../utils/clipboard';
-import { useToast } from './Toast';
 
 interface NavbarProps {
   currentTab: 'orders' | 'new-order' | 'customers' | 'revenue';
@@ -18,30 +16,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   settings,
   onOpenSettings,
 }) => {
-  const { showToast } = useToast();
-
-  const handleShareApp = async () => {
-    const shareUrl = window.location.origin;
-    const shareText = `해찬솔 감귤 주문 관리\n${shareUrl}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: '해찬솔 감귤 주문 관리',
-          text: '해찬솔 감귤 주문 관리',
-          url: shareUrl,
-        });
-        return;
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-      }
-    }
-
-    const ok = await copyToClipboard(shareText);
-    if (ok) {
-      showToast('해찬솔 감귤 주문 관리 주소가 복사되었습니다.', 'success');
-    }
-  };
 
   return (
     <header className="sticky top-0 z-40 bg-[#1f3d59] text-white shadow-sm border-b border-[#172e43]">
@@ -106,17 +80,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </nav>
 
-        {/* Zone 3: Share & Settings */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleShareApp}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white bg-white/10 hover:bg-white/15 rounded-xl transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            title="해찬솔 감귤 주문 관리 주소 복사 / 공유"
-          >
-            <Share2 className="w-3.5 h-3.5 text-[#62a4bc]" />
-            <span className="hidden sm:inline">주소 공유</span>
-          </button>
+        {/* Zone 3: Settings */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={onOpenSettings}
