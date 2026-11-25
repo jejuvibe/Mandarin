@@ -250,21 +250,38 @@ export const OrderList: React.FC<OrderListProps> = ({
             <Package className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-[#264c67]">조건에 맞는 주문이 없습니다</h4>
+            <h4 className="text-sm font-bold text-[#264c67]">
+              {orders.length > 0 ? '선택한 조건에 맞는 주문이 없습니다' : '등록된 주문이 없습니다'}
+            </h4>
             <p className="text-xs text-slate-400 mt-1">
-              {searchTerm || statusFilter !== 'all' || dateFilter || seasonFilter !== 'all'
-                ? '검색어나 필터를 재설정해 보세요.'
+              {orders.length > 0
+                ? `현재 전체 주문이 ${orders.length}건 있습니다. 아래 버튼을 눌러 필터를 해제해 보세요.`
                 : '새로운 감귤 주문을 등록하거나 메시지를 붙여넣어 보세요.'}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onOpenNewOrder}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#5c7eb1] hover:bg-[#4d6c99] rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            첫 주문 등록하기
-          </button>
+          {orders.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setDateFilter('');
+                setSeasonFilter('all');
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#5c7eb1] hover:bg-[#4d6c99] rounded-xl transition-colors cursor-pointer shadow-xs"
+            >
+              전체 주문 보기 (필터 초기화: 총 {orders.length}건)
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenNewOrder}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#5c7eb1] hover:bg-[#4d6c99] rounded-xl transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              첫 주문 등록하기
+            </button>
+          )}
         </div>
       ) : (
         /* Tabular Format: Pass sortedOrders so uncompleted orders are at top, completed orders at bottom */

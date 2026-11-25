@@ -87,16 +87,12 @@ function TangerineAppContent() {
     return DEFAULT_SETTINGS;
   });
 
-  const LEGACY_DUMMY_NAMES = ['김서연', '박민우', '이정희', '최동현', '한수진', '강호진', '윤지현', '오현석', '김정아'];
-
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
       if (saved) {
         const parsedOrders: Order[] = JSON.parse(saved);
-        // Remove legacy dummy orders
-        const cleaned = parsedOrders.filter((o) => !LEGACY_DUMMY_NAMES.includes(o.customerName));
-        return cleaned.map((o) => {
+        return parsedOrders.map((o) => {
           if (o.status === 'in_transit' || o.status === 'preparing') {
             return { ...o, status: 'order_received' as OrderStatus };
           }
@@ -113,9 +109,7 @@ function TangerineAppContent() {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
       if (saved) {
-        const parsed: Customer[] = JSON.parse(saved);
-        const cleaned = parsed.filter((c) => !LEGACY_DUMMY_NAMES.includes(c.name));
-        return cleaned;
+        return JSON.parse(saved);
       }
     } catch {
       // fallback
@@ -154,13 +148,7 @@ function TangerineAppContent() {
 
     const unsubOrders = subscribeOrdersFromDb(
       (remoteOrders) => {
-        const cleaned = remoteOrders.filter((o) => !LEGACY_DUMMY_NAMES.includes(o.customerName));
-        setOrders(cleaned);
-        // Clean out legacy test orders from Firestore so they never reappear
-        const dummies = remoteOrders.filter((o) => LEGACY_DUMMY_NAMES.includes(o.customerName));
-        for (const dummy of dummies) {
-          deleteOrderFromDb(dummy.id);
-        }
+        setOrders(remoteOrders);
       },
       (err) => {
         if (err.message && (err.message.includes('permission-denied') || err.message.includes('insufficient permissions'))) {
@@ -170,12 +158,7 @@ function TangerineAppContent() {
     );
 
     const unsubCustomers = subscribeCustomersFromDb((remoteCustomers) => {
-      const cleaned = remoteCustomers.filter((c) => !LEGACY_DUMMY_NAMES.includes(c.name));
-      setCustomers(cleaned);
-      const dummies = remoteCustomers.filter((c) => LEGACY_DUMMY_NAMES.includes(c.name));
-      for (const dummy of dummies) {
-        deleteCustomerFromDb(dummy.id);
-      }
+      setCustomers(remoteCustomers);
     });
 
     const unsubSettings = subscribeSettingsFromDb((remoteSettings) => {

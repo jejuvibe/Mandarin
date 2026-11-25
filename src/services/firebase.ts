@@ -112,15 +112,15 @@ export const subscribeOrdersFromDb = (
   if (!firestore) return () => {};
 
   const ordersCol = collection(firestore, 'orders');
-  const q = query(ordersCol, orderBy('createdAt', 'desc'));
 
   return onSnapshot(
-    q,
+    ordersCol,
     (snapshot) => {
       const orders: Order[] = [];
       snapshot.forEach((docSnap) => {
         orders.push({ id: docSnap.id, ...docSnap.data() } as Order);
       });
+      orders.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       onData(orders);
     },
     (err) => {
@@ -189,15 +189,15 @@ export const subscribeCustomersFromDb = (
   if (!firestore) return () => {};
 
   const customersCol = collection(firestore, 'customers');
-  const q = query(customersCol, orderBy('lastOrderedAt', 'desc'));
 
   return onSnapshot(
-    q,
+    customersCol,
     (snapshot) => {
       const customers: Customer[] = [];
       snapshot.forEach((docSnap) => {
         customers.push({ id: docSnap.id, ...docSnap.data() } as Customer);
       });
+      customers.sort((a, b) => (b.lastOrderedAt || '').localeCompare(a.lastOrderedAt || ''));
       onData(customers);
     },
     (err) => {
