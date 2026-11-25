@@ -50,19 +50,8 @@ export const firebaseConfig: FirebaseAppConfig = {
 
 export const FIREBASE_STORAGE_KEY = 'jeju_tangerine_firebase_config_v1';
 
-// 활성화된 Firebase 설정 가져오기 (localStorage 저장값 우선 -> 없으면 기본 firebaseConfig)
+// 활성화된 Firebase 설정 가져오기 (항상 검증된 firebaseConfig 반환)
 export const getActiveFirebaseConfig = (): FirebaseAppConfig => {
-  try {
-    const saved = localStorage.getItem(FIREBASE_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.apiKey && parsed.projectId && parsed.apiKey !== 'YOUR_API_KEY' && parsed.apiKey.length >= 38) {
-        return parsed;
-      }
-    }
-  } catch {
-    // fallback
-  }
   return firebaseConfig;
 };
 

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Save,
   Settings as SettingsIcon,
+  CreditCard,
   DollarSign,
   Truck,
   Download,
@@ -10,6 +11,7 @@ import {
   Cloud,
 } from 'lucide-react';
 import { AppSettings, Order, Customer } from '../types';
+import { DEFAULT_SETTINGS } from '../data/initialData';
 import { COURIERS } from '../utils/courier';
 import { useToast } from './Toast';
 
@@ -32,10 +34,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   customers,
   onImportData,
 }) => {
-  const [formData, setFormData] = useState<AppSettings>(settings);
+  const [formData, setFormData] = useState<AppSettings>(settings || DEFAULT_SETTINGS);
   const { showToast } = useToast();
 
+  useEffect(() => {
+    if (isOpen && settings) {
+      setFormData(settings);
+    }
+  }, [isOpen, settings]);
+
   if (!isOpen) return null;
+
+  const currentPricing = formData?.pricing || DEFAULT_SETTINGS.pricing;
+  const currentBankInfo = formData?.bankInfo || DEFAULT_SETTINGS.bankInfo;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,50 +99,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     reader.readAsText(file);
   };
 
-  const handleParseRawConfig = (text: string) => {
-    setRawConfigInput(text);
-    if (!text.trim()) return;
 
-    const extract = (key: string): string => {
-      const match = text.match(new RegExp(`["']?${key}["']?\\s*:\\s*["']([^"']+)["']`));
-      return match ? match[1] : '';
-    };
-
-    const parsedApiKey = extract('apiKey');
-    const parsedProjectId = extract('projectId');
-
-    if (parsedApiKey || parsedProjectId) {
-      setFbConfig((prev) => ({
-        ...prev,
-        apiKey: parsedApiKey || prev.apiKey,
-        authDomain: extract('authDomain') || (parsedProjectId ? `${parsedProjectId}.firebaseapp.com` : prev.authDomain),
-        projectId: parsedProjectId || prev.projectId,
-        storageBucket: extract('storageBucket') || (parsedProjectId ? `${parsedProjectId}.appspot.com` : prev.storageBucket),
-        messagingSenderId: extract('messagingSenderId') || prev.messagingSenderId,
-        appId: extract('appId') || prev.appId,
-      }));
-      showToast('파이어베이스 설정 정보가 자동으로 감지되었습니다.', 'info');
-    }
-  };
-
-  const handleSaveFirebaseConfig = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!fbConfig.apiKey || fbConfig.apiKey === 'YOUR_API_KEY' || !fbConfig.projectId || fbConfig.projectId === 'YOUR_PROJECT_ID') {
-      showToast('올바른 API Key와 Project ID를 입력해주세요.', 'error');
-      return;
-    }
-    saveCustomFirebaseConfig(fbConfig);
-    setIsFbConfiguredState(true);
-    showToast('파이어베이스 설정이 저장되었습니다! 클라우드 동기화를 시작합니다.', 'success');
-  };
-
-  const handleDisconnectFirebase = (e: React.MouseEvent) => {
-    e.preventDefault();
-    saveCustomFirebaseConfig(null);
-    setFbConfig(getActiveFirebaseConfig());
-    setIsFbConfiguredState(false);
-    showToast('파이어베이스 연동이 해제되었습니다. 로컬 브라우저 저장 모드로 전환되었습니다.', 'info');
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
@@ -177,11 +145,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <input
                     type="number"
                     step="500"
-                    value={formData.pricing.price10kg}
+                    value={currentPricing.price10kg}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        pricing: { ...formData.pricing, price10kg: Number(e.target.value) || 0 },
+                        pricing: { ...currentPricing, price10kg: Number(e.target.value) || 0 },
                       })
                     }
                     className="w-full p-2.5 pr-8 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc] font-mono text-[#1b1430]"
@@ -199,11 +167,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <input
                     type="number"
                     step="500"
-                    value={formData.pricing.price5kg}
+                    value={currentPricing.price5kg}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        pricing: { ...formData.pricing, price5kg: Number(e.target.value) || 0 },
+                        pricing: { ...currentPricing, price5kg: Number(e.target.value) || 0 },
                       })
                     }
                     className="w-full p-2.5 pr-8 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc] font-mono text-[#1b1430]"
@@ -221,11 +189,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <input
                     type="number"
                     step="100"
-                    value={formData.pricing.defaultShippingCost}
+                    value={currentPricing.defaultShippingCost}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        pricing: { ...formData.pricing, defaultShippingCost: Number(e.target.value) || 0 },
+                        pricing: { ...currentPricing, defaultShippingCost: Number(e.target.value) || 0 },
                       })
                     }
                     className="w-full p-2.5 pr-8 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc] font-mono text-rose-700"
@@ -243,11 +211,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <input
                     type="number"
                     step="50"
-                    value={formData.pricing.boxPrice10kg || 1800}
+                    value={currentPricing.boxPrice10kg ?? 1800}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        pricing: { ...formData.pricing, boxPrice10kg: Number(e.target.value) || 0 },
+                        pricing: { ...currentPricing, boxPrice10kg: Number(e.target.value) || 0 },
                       })
                     }
                     className="w-full p-2.5 pr-8 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc] font-mono text-[#1b1430]"
@@ -266,11 +234,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <input
                     type="number"
                     step="50"
-                    value={formData.pricing.boxPrice5kg || 1200}
+                    value={currentPricing.boxPrice5kg ?? 1200}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        pricing: { ...formData.pricing, boxPrice5kg: Number(e.target.value) || 0 },
+                        pricing: { ...currentPricing, boxPrice5kg: Number(e.target.value) || 0 },
                       })
                     }
                     className="w-full p-2.5 pr-8 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc] font-mono text-[#5c7eb1]"
@@ -324,11 +292,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.bankInfo.bankName}
+                  value={currentBankInfo.bankName || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      bankInfo: { ...formData.bankInfo, bankName: e.target.value },
+                      bankInfo: { ...currentBankInfo, bankName: e.target.value },
                     })
                   }
                   className="w-full p-2.5 text-sm rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc]"
@@ -343,11 +311,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.bankInfo.accountHolder}
+                  value={currentBankInfo.accountHolder || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      bankInfo: { ...formData.bankInfo, accountHolder: e.target.value },
+                      bankInfo: { ...currentBankInfo, accountHolder: e.target.value },
                     })
                   }
                   className="w-full p-2.5 text-sm rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc]"
@@ -362,11 +330,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.bankInfo.accountNumber}
+                  value={currentBankInfo.accountNumber || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      bankInfo: { ...formData.bankInfo, accountNumber: e.target.value },
+                      bankInfo: { ...currentBankInfo, accountNumber: e.target.value },
                     })
                   }
                   className="w-full p-2.5 text-sm font-semibold rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc] font-mono"
@@ -405,191 +373,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <div className="h-px bg-slate-100" />
 
-          {/* Section 4: Firebase Cloud Database Connection */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-[#1b1430] flex items-center gap-1.5 uppercase tracking-wide">
-                <Cloud className="w-4 h-4 text-[#5c7eb1]" />
-                파이어베이스 클라우드 실시간 동기화
-              </h4>
-              <button
-                type="button"
-                onClick={() => setShowFbGuide(!showFbGuide)}
-                className="inline-flex items-center gap-1 text-[11px] text-[#5c7eb1] hover:underline"
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                {showFbGuide ? '가이드 닫기' : '초보자 설정 가이드'}
-              </button>
-            </div>
-
-            {/* Status card */}
-            <div
-              className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
-                isFbConfiguredState
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    isFbConfiguredState ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
-                  }`}
-                />
+          {/* Section 4: Firebase Cloud Realtime Sync Status */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold text-[#1b1430] flex items-center gap-1.5 uppercase tracking-wide">
+              <Cloud className="w-4 h-4 text-emerald-600" />
+              파이어베이스 클라우드 실시간 동기화
+            </h4>
+            <div className="p-3.5 rounded-xl border bg-emerald-50/80 border-emerald-200 text-emerald-900 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <div>
-                  <p className="font-semibold">
-                    {isFbConfiguredState
-                      ? '클라우드 실시간 연동 활성화됨'
-                      : '로컬 브라우저 저장 모드 (파이어베이스 미연동)'}
-                  </p>
-                  <p className="text-[11px] opacity-80">
-                    {isFbConfiguredState
-                      ? `프로젝트 ID: ${fbConfig.projectId} (휴대폰·PC 실시간 동기화 중)`
-                      : '컴퓨터 브라우저에만 데이터가 보관됩니다. 여러 기기에서 보려면 파이어베이스를 연동하세요.'}
+                  <p className="font-bold text-emerald-950">클라우드 실시간 연동 활성화됨</p>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">
+                    프로젝트: <code className="font-mono font-semibold">mandarin-order-haechansol</code> (휴대폰·PC 자동 동기화 중)
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowFbDetails(!showFbDetails)}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 transition-colors shrink-0 ml-2"
-              >
-                {showFbDetails ? '접기' : '설정 열기'}
-              </button>
+              <span className="text-[11px] font-bold text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs shrink-0">
+                연결 완료 ✓
+              </span>
             </div>
-
-            {/* Beginner Quick Guide Card */}
-            {showFbGuide && (
-              <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-2">
-                <p className="font-bold flex items-center gap-1.5">
-                  <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-                  파이어베이스 3분 설정 요약:
-                </p>
-                <ol className="list-decimal list-inside space-y-1.5 text-slate-700">
-                  <li>
-                    <a
-                      href="https://console.firebase.google.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-600 font-bold underline"
-                    >
-                      console.firebase.google.com
-                    </a>{' '}
-                    접속 후 구글 로그인
-                  </li>
-                  <li>
-                    <strong>[프로젝트 추가]</strong> 클릭하여 프로젝트 생성
-                  </li>
-                  <li>
-                    메인 화면에서 <strong>웹(&lt;/&gt;)</strong> 아이콘 클릭하여 앱 등록 후 나타나는{' '}
-                    <code>firebaseConfig</code> 복사
-                  </li>
-                  <li>
-                    좌측 메뉴 <strong>[Firestore Database]</strong> 클릭 →{' '}
-                    <strong>[데이터베이스 만들기]</strong> (위치: 서울 asia-northeast3)
-                  </li>
-                  <li className="text-amber-800 font-semibold bg-amber-50 p-1.5 rounded">
-                    ★ [중요] [Firestore Database] 상단 <strong>[규칙(Rules)]</strong> 탭에서{' '}
-                    <code>allow read, write: if true;</code> 로 바꾼 후 <strong>[게시(Publish)]</strong> 클릭!
-                  </li>
-                  <li>
-                    연동 후 새 주문을 접수하면 휴대폰·PC 어디서나 실시간으로 자동 동기화됩니다.
-                  </li>
-                </ol>
-              </div>
-            )}
-
-            {/* Expanded Config Details */}
-            {showFbDetails && (
-              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    📋 파이어베이스 콘솔 코드 그대로 붙여넣기 (자동 분석)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={rawConfigInput}
-                    onChange={(e) => handleParseRawConfig(e.target.value)}
-                    placeholder={'const firebaseConfig = {\n  apiKey: "AIza...",\n  projectId: "haechansol-order",\n  ...\n};'}
-                    className="w-full p-2 text-xs font-mono rounded-lg border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#5c7eb1]/30 focus:border-[#5c7eb1]"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    콘솔에서 복사한 코드 덩어리를 통째로 붙여넣으시면 아래 항목들이 자동으로 입력됩니다.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">apiKey</label>
-                    <input
-                      type="text"
-                      value={fbConfig.apiKey}
-                      onChange={(e) => setFbConfig({ ...fbConfig, apiKey: e.target.value })}
-                      className="w-full p-1.5 text-xs font-mono rounded border border-slate-200 bg-white"
-                      placeholder="AIzaSy..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">projectId</label>
-                    <input
-                      type="text"
-                      value={fbConfig.projectId}
-                      onChange={(e) =>
-                        setFbConfig({
-                          ...fbConfig,
-                          projectId: e.target.value,
-                          authDomain: `${e.target.value}.firebaseapp.com`,
-                        })
-                      }
-                      className="w-full p-1.5 text-xs font-mono rounded border border-slate-200 bg-white"
-                      placeholder="haechansol-order"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">appId</label>
-                    <input
-                      type="text"
-                      value={fbConfig.appId}
-                      onChange={(e) => setFbConfig({ ...fbConfig, appId: e.target.value })}
-                      className="w-full p-1.5 text-xs font-mono rounded border border-slate-200 bg-white"
-                      placeholder="1:123456789:web:abcdef"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">
-                      messagingSenderId
-                    </label>
-                    <input
-                      type="text"
-                      value={fbConfig.messagingSenderId}
-                      onChange={(e) => setFbConfig({ ...fbConfig, messagingSenderId: e.target.value })}
-                      className="w-full p-1.5 text-xs font-mono rounded border border-slate-200 bg-white"
-                      placeholder="123456789"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  {isFbConfiguredState && (
-                    <button
-                      type="button"
-                      onClick={handleDisconnectFirebase}
-                      className="text-xs text-rose-600 hover:text-rose-700 underline"
-                    >
-                      연동 해제 (로컬 모드로 전환)
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSaveFirebaseConfig}
-                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#1b1430] text-white hover:bg-[#2c224d] transition-colors"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    파이어베이스 연동 저장
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="h-px bg-slate-100" />
