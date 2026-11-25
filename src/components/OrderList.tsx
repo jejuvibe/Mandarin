@@ -90,8 +90,7 @@ export const OrderList: React.FC<OrderListProps> = ({
     }
 
     const rows = targetOrders.map((o) => {
-      const items = o.items.map((i) => `${i.name} ${i.quantity}박스`).join(' / ');
-      return formatCourierRow(o.customerName, o.phone, o.address, items, o.memo);
+      return formatCourierRow(o.customerName, o.phone, o.address, o.memo);
     });
 
     const fullText = rows.join('\n');

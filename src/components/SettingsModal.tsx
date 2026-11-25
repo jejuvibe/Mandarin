@@ -3,28 +3,15 @@ import {
   X,
   Save,
   Settings as SettingsIcon,
-  CreditCard,
   DollarSign,
   Truck,
   Download,
   Upload,
-  RefreshCw,
   Cloud,
-  CheckCircle2,
-  ExternalLink,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { AppSettings, Order, Customer } from '../types';
 import { COURIERS } from '../utils/courier';
 import { useToast } from './Toast';
-import {
-  getActiveFirebaseConfig,
-  saveCustomFirebaseConfig,
-  isFirebaseConfigured,
-  FirebaseAppConfig,
-} from '../services/firebase';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,7 +21,6 @@ interface SettingsModalProps {
   orders: Order[];
   customers: Customer[];
   onImportData: (data: { orders: Order[]; customers: Customer[]; settings: AppSettings }) => void;
-  onResetToDefault: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -45,17 +31,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   orders,
   customers,
   onImportData,
-  onResetToDefault,
 }) => {
   const [formData, setFormData] = useState<AppSettings>(settings);
   const { showToast } = useToast();
-
-  // Firebase configuration state
-  const [fbConfig, setFbConfig] = useState<FirebaseAppConfig>(() => getActiveFirebaseConfig());
-  const [isFbConfiguredState, setIsFbConfiguredState] = useState<boolean>(() => isFirebaseConfigured());
-  const [rawConfigInput, setRawConfigInput] = useState('');
-  const [showFbDetails, setShowFbDetails] = useState(false);
-  const [showFbGuide, setShowFbGuide] = useState(false);
 
   if (!isOpen) return null;
 
@@ -487,7 +465,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
                   파이어베이스 3분 설정 요약:
                 </p>
-                <ol className="list-decimal list-inside space-y-1 text-slate-700">
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-700">
                   <li>
                     <a
                       href="https://console.firebase.google.com/"
@@ -500,7 +478,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     접속 후 구글 로그인
                   </li>
                   <li>
-                    <strong>[프로젝트 추가]</strong> 클릭하여 프로젝트 생성 (예: haechansol-citrus)
+                    <strong>[프로젝트 추가]</strong> 클릭하여 프로젝트 생성
                   </li>
                   <li>
                     메인 화면에서 <strong>웹(&lt;/&gt;)</strong> 아이콘 클릭하여 앱 등록 후 나타나는{' '}
@@ -510,8 +488,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     좌측 메뉴 <strong>[Firestore Database]</strong> 클릭 →{' '}
                     <strong>[데이터베이스 만들기]</strong> (위치: 서울 asia-northeast3)
                   </li>
+                  <li className="text-amber-800 font-semibold bg-amber-50 p-1.5 rounded">
+                    ★ [중요] [Firestore Database] 상단 <strong>[규칙(Rules)]</strong> 탭에서{' '}
+                    <code>allow read, write: if true;</code> 로 바꾼 후 <strong>[게시(Publish)]</strong> 클릭!
+                  </li>
                   <li>
-                    아래 [설정 열기]를 눌러 복사한 코드를 붙여넣고 [저장] 누르면 즉시 연동 완료!
+                    연동 후 새 주문을 접수하면 휴대폰·PC 어디서나 실시간으로 자동 동기화됩니다.
                   </li>
                 </ol>
               </div>
@@ -647,19 +629,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className="hidden"
                 />
               </label>
-
-              <button
-                type="button"
-                onClick={() => {
-                  onResetToDefault();
-                  showToast('기본 예시 데이터로 초기화되었습니다.', 'info');
-                  onClose();
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors ml-auto"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                예시 데이터 초기화
-              </button>
             </div>
           </div>
         </form>

@@ -23,6 +23,7 @@ import {
   deleteCustomerFromDb,
   subscribeSettingsFromDb,
   saveSettingsToDb,
+  clearAllFirestoreData,
 } from './services/firebase';
 
 const STORAGE_KEYS = {
@@ -33,6 +34,12 @@ const STORAGE_KEYS = {
 
 function TangerineAppContent() {
   const { showToast } = useToast();
+
+  const checkFirebasePermissionError = (err?: string) => {
+    if (err && (err.includes('permission') || err.includes('insufficient') || err.includes('PERMISSION_DENIED'))) {
+      showToast('⚠️ 파이어베이스 권한 오류: 콘솔 [Firestore Database] -> [규칙(Rules)] 탭에서 allow read, write: if true; 로 설정 후 [게시]를 꼭 눌러주세요!', 'error');
+    }
+  };
 
   // 1. Persistent State
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -71,6 +78,7 @@ function TangerineAppContent() {
           bankNoticeTemplate: isOldBankTmpl ? DEFAULT_SETTINGS.bankNoticeTemplate : parsed.bankNoticeTemplate,
           shippingNoticeTemplate: isOldShippingTmpl ? DEFAULT_SETTINGS.shippingNoticeTemplate : parsed.shippingNoticeTemplate,
           preOrderInquiryTemplate: isOldPreOrderTmpl ? DEFAULT_SETTINGS.preOrderInquiryTemplate : parsed.preOrderInquiryTemplate,
+          defaultCarrier: (!parsed.defaultCarrier || parsed.defaultCarrier === '우체국택배') ? 'CJ대한통운' : parsed.defaultCarrier,
         };
       }
     } catch {
@@ -79,7 +87,7 @@ function TangerineAppContent() {
     return DEFAULT_SETTINGS;
   });
 
-  const LEGACY_DUMMY_NAMES = ['김서연', '박민우', '이정희', '최동현', '한수진', '강호진', '윤지현'];
+  const LEGACY_DUMMY_NAMES = ['김서연', '박민우', '이정희', '최동현', '한수진', '강호진', '윤지현', '오현석', '김정아'];
 
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
@@ -88,14 +96,12 @@ function TangerineAppContent() {
         const parsedOrders: Order[] = JSON.parse(saved);
         // Remove legacy dummy orders
         const cleaned = parsedOrders.filter((o) => !LEGACY_DUMMY_NAMES.includes(o.customerName));
-        if (cleaned.length > 0) {
-          return cleaned.map((o) => {
-            if (o.status === 'in_transit' || o.status === 'preparing') {
-              return { ...o, status: 'order_received' as OrderStatus };
-            }
-            return o;
-          });
-        }
+        return cleaned.map((o) => {
+          if (o.status === 'in_transit' || o.status === 'preparing') {
+            return { ...o, status: 'order_received' as OrderStatus };
+          }
+          return o;
+        });
       }
     } catch {
       // fallback
@@ -109,9 +115,7 @@ function TangerineAppContent() {
       if (saved) {
         const parsed: Customer[] = JSON.parse(saved);
         const cleaned = parsed.filter((c) => !LEGACY_DUMMY_NAMES.includes(c.name));
-        if (cleaned.length > 0) {
-          return cleaned;
-        }
+        return cleaned;
       }
     } catch {
       // fallback
@@ -148,15 +152,29 @@ function TangerineAppContent() {
   useEffect(() => {
     if (!isFirebaseConfigured()) return;
 
-    const unsubOrders = subscribeOrdersFromDb((remoteOrders) => {
-      if (remoteOrders.length > 0) {
-        setOrders(remoteOrders);
+    const unsubOrders = subscribeOrdersFromDb(
+      (remoteOrders) => {
+        const cleaned = remoteOrders.filter((o) => !LEGACY_DUMMY_NAMES.includes(o.customerName));
+        setOrders(cleaned);
+        // Clean out legacy test orders from Firestore so they never reappear
+        const dummies = remoteOrders.filter((o) => LEGACY_DUMMY_NAMES.includes(o.customerName));
+        for (const dummy of dummies) {
+          deleteOrderFromDb(dummy.id);
+        }
+      },
+      (err) => {
+        if (err.message && (err.message.includes('permission-denied') || err.message.includes('insufficient permissions'))) {
+          showToast('⚠️ 파이어베이스 권한 오류: 콘솔 [Firestore Database] -> [규칙(Rules)] 탭에서 allow read, write: if true; 로 설정 후 게시해주세요.', 'error');
+        }
       }
-    });
+    );
 
     const unsubCustomers = subscribeCustomersFromDb((remoteCustomers) => {
-      if (remoteCustomers.length > 0) {
-        setCustomers(remoteCustomers);
+      const cleaned = remoteCustomers.filter((c) => !LEGACY_DUMMY_NAMES.includes(c.name));
+      setCustomers(cleaned);
+      const dummies = remoteCustomers.filter((c) => LEGACY_DUMMY_NAMES.includes(c.name));
+      for (const dummy of dummies) {
+        deleteCustomerFromDb(dummy.id);
       }
     });
 
@@ -203,7 +221,7 @@ function TangerineAppContent() {
 
     // Sync order to Firebase if configured
     if (isFirebaseConfigured()) {
-      saveOrderToDb(savedOrder);
+      saveOrderToDb(savedOrder).then((r) => r && checkFirebasePermissionError(r.error));
     }
 
     // 2. Remember latest unit prices for future orders (User requirement!)
@@ -218,7 +236,7 @@ function TangerineAppContent() {
           },
         };
         if (isFirebaseConfigured()) {
-          saveSettingsToDb(nextSettings);
+          saveSettingsToDb(nextSettings).then((r) => r && checkFirebasePermissionError(r.error));
         }
         return nextSettings;
       });
@@ -247,7 +265,7 @@ function TangerineAppContent() {
         const updatedList = [...prev];
         updatedList[existingIdx] = targetCustomer;
         if (isFirebaseConfigured()) {
-          saveCustomerToDb(targetCustomer);
+          saveCustomerToDb(targetCustomer).then((r) => r && checkFirebasePermissionError(r.error));
         }
         return updatedList;
       } else {
@@ -262,7 +280,7 @@ function TangerineAppContent() {
           notes: savedOrder.memo,
         };
         if (isFirebaseConfigured()) {
-          saveCustomerToDb(targetCustomer);
+          saveCustomerToDb(targetCustomer).then((r) => r && checkFirebasePermissionError(r.error));
         }
         return [targetCustomer, ...prev];
       }
@@ -277,7 +295,7 @@ function TangerineAppContent() {
   const handleDeleteOrder = (orderId: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
     if (isFirebaseConfigured()) {
-      deleteOrderFromDb(orderId);
+      deleteOrderFromDb(orderId).then((r) => r && checkFirebasePermissionError(r.error));
     }
   };
 
@@ -297,7 +315,7 @@ function TangerineAppContent() {
             trackingNumber: trackingNumber !== undefined ? trackingNumber : o.trackingNumber,
           };
           if (isFirebaseConfigured()) {
-            saveOrderToDb(updated);
+            saveOrderToDb(updated).then((r) => r && checkFirebasePermissionError(r.error));
           }
           return updated;
         }
@@ -318,14 +336,14 @@ function TangerineAppContent() {
       return [customer, ...prev];
     });
     if (isFirebaseConfigured()) {
-      saveCustomerToDb(customer);
+      saveCustomerToDb(customer).then((r) => r && checkFirebasePermissionError(r.error));
     }
   };
 
   const handleDeleteCustomer = (id: string) => {
     setCustomers((prev) => prev.filter((c) => c.id !== id));
     if (isFirebaseConfigured()) {
-      deleteCustomerFromDb(id);
+      deleteCustomerFromDb(id).then((r) => r && checkFirebasePermissionError(r.error));
     }
   };
 
@@ -356,23 +374,33 @@ function TangerineAppContent() {
 
   // Season Settlement Handlers
   const handleSaveSettlement = (seasonKey: string, settlement: SeasonSettlement) => {
-    setSettings((prev) => ({
-      ...prev,
-      settlements: {
-        ...(prev.settlements || {}),
-        [seasonKey]: settlement,
-      },
-    }));
+    setSettings((prev) => {
+      const updated = {
+        ...prev,
+        settlements: {
+          ...(prev.settlements || {}),
+          [seasonKey]: settlement,
+        },
+      };
+      if (isFirebaseConfigured()) {
+        saveSettingsToDb(updated);
+      }
+      return updated;
+    });
   };
 
   const handleReopenSettlement = (seasonKey: string) => {
     setSettings((prev) => {
-      const updated = { ...(prev.settlements || {}) };
-      delete updated[seasonKey];
-      return {
+      const updatedSettlements = { ...(prev.settlements || {}) };
+      delete updatedSettlements[seasonKey];
+      const updated = {
         ...prev,
-        settlements: updated,
+        settlements: updatedSettlements,
       };
+      if (isFirebaseConfigured()) {
+        saveSettingsToDb(updated);
+      }
+      return updated;
     });
   };
 
@@ -417,10 +445,19 @@ function TangerineAppContent() {
     if (data.settings) setSettings(data.settings);
   };
 
-  const handleResetToDefault = () => {
-    setSettings(DEFAULT_SETTINGS);
-    setOrders(INITIAL_ORDERS);
-    setCustomers(INITIAL_CUSTOMERS);
+  const handleResetToDefault = async () => {
+    setOrders([]);
+    setCustomers([]);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.ORDERS);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOMERS);
+    } catch (e) {
+      console.error('Failed to clear localStorage', e);
+    }
+    if (isFirebaseConfigured()) {
+      await clearAllFirestoreData();
+    }
+    showToast('주문 및 주소록 데이터가 완전히 비워졌습니다. (0건 시작)', 'info');
   };
 
   const pendingPaymentCount = orders.filter((o) => o.status === 'payment_pending').length;
@@ -553,11 +590,15 @@ function TangerineAppContent() {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         settings={settings}
-        onSaveSettings={(newSettings) => setSettings(newSettings)}
+        onSaveSettings={(newSettings) => {
+          setSettings(newSettings);
+          if (isFirebaseConfigured()) {
+            saveSettingsToDb(newSettings);
+          }
+        }}
         orders={orders}
         customers={customers}
         onImportData={handleImportData}
-        onResetToDefault={handleResetToDefault}
       />
 
       <PreOrderInquiryModal

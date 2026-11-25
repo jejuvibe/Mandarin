@@ -22,6 +22,7 @@ import {
   Firestore,
   query,
   orderBy,
+  getDocs,
 } from 'firebase/firestore';
 import { Order, Customer, AppSettings } from '../types';
 
@@ -39,12 +40,12 @@ export interface FirebaseAppConfig {
 }
 
 export const firebaseConfig: FirebaseAppConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'YOUR_API_KEY',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'YOUR_PROJECT_ID',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'YOUR_PROJECT_ID.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || 'YOUR_MESSAGING_SENDER_ID',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || 'YOUR_APP_ID',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAjoHCH_XJvb4OWOO_os0f7V3-U3yEPJTE',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'mandarin-order-haechansol.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'mandarin-order-haechansol',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'mandarin-order-haechansol.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '246552705090',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:246552705090:web:9d0a2bf2614e914e96d5db',
 };
 
 export const FIREBASE_STORAGE_KEY = 'jeju_tangerine_firebase_config_v1';
@@ -55,7 +56,7 @@ export const getActiveFirebaseConfig = (): FirebaseAppConfig => {
     const saved = localStorage.getItem(FIREBASE_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.apiKey && parsed.projectId && parsed.apiKey !== 'YOUR_API_KEY') {
+      if (parsed.apiKey && parsed.projectId && parsed.apiKey !== 'YOUR_API_KEY' && parsed.apiKey.length >= 38) {
         return parsed;
       }
     }
@@ -158,21 +159,33 @@ function sanitizeForFirestore(obj: any): any {
   return obj;
 }
 
-export const saveOrderToDb = async (order: Order): Promise<void> => {
+export const saveOrderToDb = async (order: Order): Promise<{ success: boolean; error?: string }> => {
   const firestore = getFirebaseDb();
-  if (!firestore) return;
+  if (!firestore) return { success: false, error: 'Firebase not configured' };
 
-  const docRef = doc(firestore, 'orders', order.id);
-  const data = sanitizeForFirestore(order);
-  await setDoc(docRef, data, { merge: true });
+  try {
+    const docRef = doc(firestore, 'orders', order.id);
+    const data = sanitizeForFirestore(order);
+    await setDoc(docRef, data, { merge: true });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error saving order to Firebase:', err);
+    return { success: false, error: err?.message || '저장 오류' };
+  }
 };
 
-export const deleteOrderFromDb = async (orderId: string): Promise<void> => {
+export const deleteOrderFromDb = async (orderId: string): Promise<{ success: boolean; error?: string }> => {
   const firestore = getFirebaseDb();
-  if (!firestore) return;
+  if (!firestore) return { success: false, error: 'Firebase not configured' };
 
-  const docRef = doc(firestore, 'orders', orderId);
-  await deleteDoc(docRef);
+  try {
+    const docRef = doc(firestore, 'orders', orderId);
+    await deleteDoc(docRef);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error deleting order from Firebase:', err);
+    return { success: false, error: err?.message || '삭제 오류' };
+  }
 };
 
 // ============================================================================
@@ -205,21 +218,33 @@ export const subscribeCustomersFromDb = (
   );
 };
 
-export const saveCustomerToDb = async (customer: Customer): Promise<void> => {
+export const saveCustomerToDb = async (customer: Customer): Promise<{ success: boolean; error?: string }> => {
   const firestore = getFirebaseDb();
-  if (!firestore) return;
+  if (!firestore) return { success: false, error: 'Firebase not configured' };
 
-  const docRef = doc(firestore, 'customers', customer.id);
-  const data = sanitizeForFirestore(customer);
-  await setDoc(docRef, data, { merge: true });
+  try {
+    const docRef = doc(firestore, 'customers', customer.id);
+    const data = sanitizeForFirestore(customer);
+    await setDoc(docRef, data, { merge: true });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error saving customer to Firebase:', err);
+    return { success: false, error: err?.message || '고객 저장 오류' };
+  }
 };
 
-export const deleteCustomerFromDb = async (customerId: string): Promise<void> => {
+export const deleteCustomerFromDb = async (customerId: string): Promise<{ success: boolean; error?: string }> => {
   const firestore = getFirebaseDb();
-  if (!firestore) return;
+  if (!firestore) return { success: false, error: 'Firebase not configured' };
 
-  const docRef = doc(firestore, 'customers', customerId);
-  await deleteDoc(docRef);
+  try {
+    const docRef = doc(firestore, 'customers', customerId);
+    await deleteDoc(docRef);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error deleting customer from Firebase:', err);
+    return { success: false, error: err?.message || '고객 삭제 오류' };
+  }
 };
 
 // ============================================================================
@@ -249,11 +274,43 @@ export const subscribeSettingsFromDb = (
   );
 };
 
-export const saveSettingsToDb = async (settings: AppSettings): Promise<void> => {
+export const saveSettingsToDb = async (settings: AppSettings): Promise<{ success: boolean; error?: string }> => {
   const firestore = getFirebaseDb();
-  if (!firestore) return;
+  if (!firestore) return { success: false, error: 'Firebase not configured' };
 
-  const docRef = doc(firestore, 'settings', 'app_settings');
-  const data = sanitizeForFirestore(settings);
-  await setDoc(docRef, data, { merge: true });
+  try {
+    const docRef = doc(firestore, 'settings', 'app_settings');
+    const data = sanitizeForFirestore(settings);
+    await setDoc(docRef, data, { merge: true });
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error saving settings to Firebase:', err);
+    return { success: false, error: err?.message || '설정 저장 오류' };
+  }
 };
+
+export const clearAllFirestoreData = async (): Promise<{ success: boolean; error?: string }> => {
+  const firestore = getFirebaseDb();
+  if (!firestore) return { success: false, error: '파이어베이스가 연결되지 않았습니다.' };
+
+  try {
+    const ordersCol = collection(firestore, 'orders');
+    const ordersSnap = await getDocs(ordersCol);
+    for (const d of ordersSnap.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    const custCol = collection(firestore, 'customers');
+    const custSnap = await getDocs(custCol);
+    for (const d of custSnap.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error clearing Firestore data:', err);
+    return { success: false, error: err?.message || '초기화 오류' };
+  }
+};
+
+

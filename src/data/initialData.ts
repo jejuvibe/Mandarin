@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     boxPrice10kg: 1000,         // 10kg 박스 원가 1000원
     defaultShippingCost: 4500,  // 상자당 기본 택배비
   },
-  defaultCarrier: '우체국택배',
+  defaultCarrier: 'CJ대한통운',
   dispatchNoticeTemplate:
 `[발송예정 안내]
 {customerName} 고객님, 정성껏 수확한 노지감귤({itemSummary})이 {dispatchDate}에 {carrier}로 발송될 예정입니다.
@@ -66,93 +66,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
 감사합니다!`,
 };
 
-export const INITIAL_CUSTOMERS: Customer[] = [
-  {
-    id: 'CUST-001',
-    name: '오현석',
-    phone: '010-3847-1928',
-    address: '서울특별시 송파구 올림픽로 300 롯데캐슬 103동 1502호',
-    postalCode: '05551',
-    orderCount: 1,
-    totalSpent: 25000,
-    lastOrderedAt: '2026-11-24',
-    notes: '10kg 감귤 주문 고객',
-  },
-  {
-    id: 'CUST-002',
-    name: '김정아',
-    phone: '010-4921-8274',
-    address: '경기도 성남시 분당구 판교역로 146 판교푸르지오 205동 801호',
-    postalCode: '13524',
-    orderCount: 1,
-    totalSpent: 45000,
-    lastOrderedAt: '2026-11-24',
-    notes: '5kg, 10kg 선물용 주문',
-  },
-];
+export const INITIAL_CUSTOMERS: Customer[] = [];
 
-export const INITIAL_ORDERS: Order[] = [
-  {
-    id: 'ORD-20261124-001',
-    createdAt: '2026-11-24 14:20',
-    customerName: '오현석',
-    phone: '010-3847-1928',
-    address: '서울특별시 송파구 올림픽로 300 롯데캐슬 103동 1502호',
-    postalCode: '05551',
-    items: [
-      {
-        id: 'ITEM-1',
-        type: '10kg',
-        name: '노지 감귤 10kg',
-        quantity: 1,
-        unitPrice: 25000,
-      },
-    ],
-    totalAmount: 25000,
-    shippingCost: 4500,
-    boxCost: 1000,
-    netProfit: 19500,
-    status: 'order_received',
-    dispatchDate: '2026-11-25',
-    carrier: '우체국택배',
-    trackingNumber: '',
-    memo: '부재 시 경비실에 맡겨주세요',
-    isPaid: true,
-    paidAt: '2026-11-24 14:35',
-  },
-  {
-    id: 'ORD-20261124-002',
-    createdAt: '2026-11-24 11:05',
-    customerName: '김정아',
-    phone: '010-4921-8274',
-    address: '경기도 성남시 분당구 판교역로 146 판교푸르지오 205동 801호',
-    postalCode: '13524',
-    items: [
-      {
-        id: 'ITEM-2',
-        type: '5kg',
-        name: '노지 감귤 5kg',
-        quantity: 1,
-        unitPrice: 20000,
-      },
-      {
-        id: 'ITEM-3',
-        type: '10kg',
-        name: '노지 감귤 10kg',
-        quantity: 1,
-        unitPrice: 25000,
-      },
-    ],
-    totalAmount: 45000,
-    shippingCost: 9000,
-    boxCost: 1800,
-    netProfit: 34200,
-    status: 'order_received',
-    dispatchDate: '2026-11-26',
-    carrier: '우체국택배',
-    trackingNumber: '',
-    memo: '문 앞 배송 요망',
-    isPaid: true,
-    paidAt: '2026-11-24 11:15',
-  },
-];
+export const INITIAL_ORDERS: Order[] = [];

@@ -6,6 +6,11 @@ export interface CourierInfo {
 
 export const COURIERS: CourierInfo[] = [
   {
+    code: 'cj',
+    name: 'CJ대한통운',
+    defaultTrackingUrl: (n) => `https://www.doortodoor.co.kr/tracking/jsp/cplus/mpbz0230.jsp?invc_no=${encodeURIComponent(n)}`,
+  },
+  {
     code: 'epost',
     name: '우체국택배',
     defaultTrackingUrl: (n) => `https://service.epost.go.kr/trace.RetrieveDomRcvTraceList.comm?sid1=${encodeURIComponent(n)}`,
@@ -14,11 +19,6 @@ export const COURIERS: CourierInfo[] = [
     code: 'nonghyup',
     name: '농협택배',
     defaultTrackingUrl: (n) => `https://tracker.delivery/#/kr.nonghyup/${encodeURIComponent(n)}`,
-  },
-  {
-    code: 'cj',
-    name: 'CJ대한통운',
-    defaultTrackingUrl: (n) => `https://www.doortodoor.co.kr/tracking/jsp/cplus/mpbz0230.jsp?invc_no=${encodeURIComponent(n)}`,
   },
   {
     code: 'hanjin',
@@ -50,20 +50,18 @@ export function getTrackingUrl(carrierName: string, trackingNumber: string): str
 
 /**
  * Format order for courier booking copy paste
- * e.g. [수령인] 홍길동 | [전화] 010-1234-5678 | [주소] 제주 제주시 첨단로 123 | [품목] 노지감귤 10kg (1박스)
+ * e.g. 받는분: 홍길동 | 연락처: 010-1234-5678 | 주소: 제주 제주시 첨단로 123 | 배송메모: 부재 시 경비실
  */
 export function formatCourierRow(
   name: string,
   phone: string,
   address: string,
-  itemDesc: string,
   memo?: string
 ): string {
   const parts = [
     `받는분: ${name}`,
     `연락처: ${phone}`,
     `주소: ${address}`,
-    `품목: ${itemDesc}`,
   ];
   if (memo) {
     parts.push(`배송메모: ${memo}`);
