@@ -20,14 +20,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#1f3d59] text-white shadow-sm border-b border-[#172e43]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-8">
-        {/* Zone 1: 🍊해찬솔 농원 (귤과 해찬솔 사이 띄어쓰기 없고, 해찬솔 다음 농원은 띄어쓰기) */}
+        {/* Zone 1: 🍊 해찬솔 농원 (귤 아이콘과 해찬솔 농원 사이 자연스러운 간격 적용) */}
         <div className="flex items-center shrink-0">
           <button
             type="button"
             onClick={() => onSelectTab('orders')}
-            className="inline-flex items-center text-left font-bold text-base sm:text-lg tracking-tight text-white whitespace-nowrap shrink-0 hover:text-slate-200 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 sm:gap-2 text-left font-bold text-base sm:text-lg tracking-tight text-white whitespace-nowrap shrink-0 hover:text-slate-200 transition-colors cursor-pointer"
           >
-            <span className="text-2xl select-none leading-none mr-0">🍊</span>
+            <span className="text-xl sm:text-2xl select-none leading-none">🍊</span>
             <span>{settings.farmName ? settings.farmName.replace('해찬솔농원', '해찬솔 농원') : '해찬솔 농원'}</span>
           </button>
         </div>

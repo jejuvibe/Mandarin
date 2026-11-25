@@ -227,13 +227,16 @@ export function parseKoreanOrderMessage(rawText: string): ParsedOrderData {
 
     // Clean honorifics from customerName
     if (result.customerName) {
-      result.customerName = result.customerName.replace(/님|고객|귀하/g, '').trim();
+      result.customerName = result.customerName
+        .replace(/님|고객|귀하/g, '')
+        .replace(/^[\s/|,\._~;:^\-]+|[\s/|,\._~;:^\-]+$/g, '')
+        .trim();
       const escapedName = result.customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      cleanAddr = cleanAddr.replace(new RegExp(`(?:\\s+|^)${escapedName}(?:\\s*(?:님|고객|귀하))?$`, 'i'), '').trim();
-      cleanAddr = cleanAddr.replace(new RegExp(`^${escapedName}(?:\\s*(?:님|고객|귀하))?\\s+`, 'i'), '').trim();
+      cleanAddr = cleanAddr.replace(new RegExp(`^[\\s/|,\._~;:^\\-]*${escapedName}(?:님|고객|귀하)?[\\s/|,\._~;:^\\-]*`, 'i'), '').trim();
+      cleanAddr = cleanAddr.replace(new RegExp(`[\\s/|,\._~;:^\\-]*${escapedName}(?:님|고객|귀하)?[\\s/|,\._~;:^\\-]*$`, 'i'), '').trim();
     } else {
       // If customerName was NOT extracted yet, detect trailing 2-4 hangul word at the end of address
-      const trailingWordMatch = cleanAddr.match(/\s+([가-힣]{2,4})(?:님|고객|귀하)?$/);
+      const trailingWordMatch = cleanAddr.match(/[\s/|,\-]([가-힣]{2,4})(?:님|고객|귀하)?[\s/|,\._~;:^\-]*$/);
       if (trailingWordMatch) {
         const candidate = trailingWordMatch[1];
         if (!NON_NAME_WORDS.has(candidate) && !KOREAN_REGIONS.includes(candidate)) {
@@ -245,8 +248,8 @@ export function parseKoreanOrderMessage(rawText: string): ParsedOrderData {
       }
     }
 
-    // Remove any trailing open parenthesis/bracket/comma left behind after splitting
-    cleanAddr = cleanAddr.replace(/[\(\[\,\-\.]+$/g, '').trim();
+    // Strip any leading or trailing delimiters (e.g. /, |, ,, -, ., brackets)
+    cleanAddr = cleanAddr.replace(/^[\s/|,\._~;:^\-\(\)\[\]]+|[\s/|,\._~;:^\-\(\)\[\]]+$/g, '').trim();
     cleanAddr = cleanAddr.replace(/\s+/g, ' ');
 
     result.address = cleanAddr;
@@ -307,8 +310,8 @@ function cleanAddressAndExtractMeta(addr: string): {
     cleaned = cleaned.slice(0, delMatch.index).trim();
   }
 
-  // Remove any trailing open parenthesis/bracket/comma left behind after splitting
-  cleaned = cleaned.replace(/[\(\[\,\-\.]+$/g, '').trim();
+  // Remove any leading or trailing delimiters (slashes, brackets, commas, dashes, etc.)
+  cleaned = cleaned.replace(/^[\s/|,\._~;:^\-\(\)\[\]]+|[\s/|,\._~;:^\-\(\)\[\]]+$/g, '').trim();
 
   // Normalize internal whitespace
   cleaned = cleaned.replace(/\s+/g, ' ');

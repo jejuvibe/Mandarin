@@ -1,3 +1,5 @@
+import { Order, OrderItem } from '../types';
+
 export interface CourierInfo {
   code: string;
   name: string;
@@ -86,16 +88,16 @@ export function cleanAddressForCourier(
   if (customerName && customerName.trim().length >= 2) {
     const trimmedName = customerName.trim();
     const escaped = trimmedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    cleaned = cleaned.replace(new RegExp('^' + escaped + '(?:님|고객님|고객|귀하)?(?:\\s+|$)', 'i'), '');
-    cleaned = cleaned.replace(new RegExp('(?:\\s+|^)' + escaped + '(?:님|고객님|고객|귀하)?$', 'i'), '');
+    cleaned = cleaned.replace(new RegExp('^[\\s/|,\._~;:^\\-]*' + escaped + '(?:님|고객님|고객|귀하)?[\\s/|,\._~;:^\\-]*', 'i'), '');
+    cleaned = cleaned.replace(new RegExp('[\\s/|,\._~;:^\\-]*' + escaped + '(?:님|고객님|고객|귀하)?[\\s/|,\._~;:^\\-]*$', 'i'), '');
   }
 
   // 4. Strip prefix labels
   cleaned = cleaned.replace(/^(?:주소|배송지|배송지주소|받는곳|받는분)\s*[:：]\s*/i, '');
 
-  // 5. Clean up extra spaces and trailing punctuation
+  // 5. Clean up extra spaces and leading/trailing delimiters (slashes, brackets, pipes, etc.)
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
-  cleaned = cleaned.replace(/[,;\-\.]+$/, '').trim();
+  cleaned = cleaned.replace(/^[\s/|,\._~;:^\-\(\)\[\]]+|[\s/|,\._~;:^\-\(\)\[\]]+$/g, '').trim();
 
   return cleaned;
 }
@@ -120,6 +122,67 @@ export function formatCourierRow(
     parts.push(`배송메모: ${memo}`);
   }
   return parts.join(' | ');
+}
+
+/**
+ * Summary label for order items, e.g. "10kg 2박스", "5kg 1박스"
+ */
+export function getOrderItemSummary(items?: OrderItem[]): string {
+  if (!items || items.length === 0) return '10kg 1박스';
+  return items
+    .map((i) => {
+      const typeLabel = i.type === 'custom' ? (i.name || '맞춤') : i.type;
+      return `${typeLabel} ${i.quantity}박스`;
+    })
+    .join(', ');
+}
+
+/**
+ * Format bulk orders for courier dispatch grouped by item summary:
+ * e.g.
+ * [발송내역 : 10kg 2박스]
+ * 받는분: 정창수 | 연락처: 010-3883-1378 | 주소: 경남 의령군 가례면 가례로11길 9-1
+ * 
+ * [발송내역 : 10kg 1박스]
+ * 받는분: 장한결 | 연락처: 010-4162-7982 | 주소: 대구 남구 명덕로34길 47 2층
+ */
+export function formatBulkCourierOrders(orders: Order[]): string {
+  if (!orders || orders.length === 0) return '';
+
+  // 1. Group orders by their item summary
+  const groups = new Map<string, Order[]>();
+
+  orders.forEach((order) => {
+    const summary = getOrderItemSummary(order.items);
+    if (!groups.has(summary)) {
+      groups.set(summary, []);
+    }
+    groups.get(summary)!.push(order);
+  });
+
+  // 2. Sort groups (10kg groups first, then 5kg, by quantity descending)
+  const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+    const is10A = a.includes('10kg') || a.includes('10키로');
+    const is10B = b.includes('10kg') || b.includes('10키로');
+    if (is10A && !is10B) return -1;
+    if (!is10A && is10B) return 1;
+
+    const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0;
+    const numB = parseInt(b.replace(/[^0-9]/g, ''), 10) || 0;
+    return numB - numA;
+  });
+
+  // 3. Build group blocks separated by an empty line
+  const groupBlocks = sortedKeys.map((key) => {
+    const groupOrders = groups.get(key)!;
+    const header = `[발송내역 : ${key}]`;
+    const orderLines = groupOrders.map((o) =>
+      formatCourierRow(o.customerName, o.phone, o.address, o.memo)
+    );
+    return `${header}\n${orderLines.join('\n')}`;
+  });
+
+  return groupBlocks.join('\n\n');
 }
 
 /**

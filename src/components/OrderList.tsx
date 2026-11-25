@@ -3,7 +3,7 @@ import { Search, Plus, Copy, Package } from 'lucide-react';
 import { Order, OrderStatus, AppSettings } from '../types';
 import { OrderTable } from './OrderTable';
 import { copyToClipboard } from '../utils/clipboard';
-import { formatCourierRow } from '../utils/courier';
+import { formatCourierRow, formatBulkCourierOrders } from '../utils/courier';
 import { getOrderSeasonKey, getAllSeasonKeys } from '../utils/season';
 import { useToast } from './Toast';
 
@@ -91,14 +91,10 @@ export const OrderList: React.FC<OrderListProps> = ({
       return;
     }
 
-    const rows = targetOrders.map((o) => {
-      return formatCourierRow(o.customerName, o.phone, o.address, o.memo);
-    });
-
-    const fullText = rows.join('\n');
+    const fullText = formatBulkCourierOrders(targetOrders);
     const ok = await copyToClipboard(fullText);
     if (ok) {
-      showToast(`[주문접수] ${targetOrders.length}건의 택배정보가 일괄 복사되었습니다!`, 'copy');
+      showToast(`[주문접수] ${targetOrders.length}건의 택배정보가 발송내역별로 복사되었습니다!`, 'copy');
     }
   };
 
@@ -123,80 +119,68 @@ export const OrderList: React.FC<OrderListProps> = ({
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      {/* Search & Quick Actions Bar */}
-      <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/90 shadow-xs space-y-2 sm:space-y-3">
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="주문 검색 (이름, 전화번호, 주소, 송장번호)"
-            className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg sm:rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-[#62a4bc]/30 focus:border-[#62a4bc]"
-          />
-        </div>
+      {/* Search & Quick Actions Bar (Ultra-Compact & Slim) */}
+      <div className="bg-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 sm:gap-2">
+          {/* Left group: Status Filter Tabs + Season + Date */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            {/* Status Buttons: Compact segmented buttons */}
+            <div className="inline-flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg shrink-0">
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-[#5c7eb1] text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>전체</span>
+                <span className="font-mono text-[10px]">({orders.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('payment_pending')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                  statusFilter === 'payment_pending'
+                    ? 'bg-rose-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>입금대기</span>
+                <span className="font-mono text-[10px]">({paymentPendingCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('order_received')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                  statusFilter === 'order_received'
+                    ? 'bg-[#487294] text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>주문접수</span>
+                <span className="font-mono text-[10px]">({receivedOrdersCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('delivered')}
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                  statusFilter === 'delivered'
+                    ? 'bg-[#264c67] text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <span>배송완료</span>
+                <span className="font-mono text-[10px]">({deliveredCount})</span>
+              </button>
+            </div>
 
-        {/* Status Buttons: 4 columns, single line with whitespace-nowrap so numbers never wrap down */}
-        <div className="grid grid-cols-4 gap-1 sm:gap-1.5 w-full">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('all')}
-            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
-              statusFilter === 'all'
-                ? 'bg-[#5c7eb1] text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <span>전체</span>
-            <span className="font-mono text-[10px] sm:text-[11px]">({orders.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('payment_pending')}
-            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
-              statusFilter === 'payment_pending'
-                ? 'bg-rose-600 text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <span>입금대기</span>
-            <span className="font-mono text-[10px] sm:text-[11px]">({paymentPendingCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('order_received')}
-            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
-              statusFilter === 'order_received'
-                ? 'bg-[#487294] text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <span>주문접수</span>
-            <span className="font-mono text-[10px] sm:text-[11px]">({receivedOrdersCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('delivered')}
-            className={`py-1.5 px-0.5 sm:px-1.5 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap text-center transition-colors flex items-center justify-center gap-0.5 ${
-              statusFilter === 'delivered'
-                ? 'bg-[#264c67] text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <span>배송완료</span>
-            <span className="font-mono text-[10px] sm:text-[11px]">({deliveredCount})</span>
-          </button>
-        </div>
-
-        {/* Season & Date Filter & Bulk Copy Row */}
-        <div className="flex items-center justify-between gap-1.5 flex-wrap pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
             {/* Season Selector */}
             <select
               value={seasonFilter}
               onChange={(e) => setSeasonFilter(e.target.value)}
-              className="py-1 px-1.5 text-xs rounded-lg border border-slate-200 font-medium bg-slate-50 text-slate-800 outline-none"
+              className="py-1 px-2 text-[11px] rounded-lg border border-slate-200 font-medium bg-slate-50 text-slate-700 outline-none cursor-pointer hover:border-slate-300 shrink-0"
             >
               <option value="all">모든 시즌</option>
               {availableSeasons.map((sk) => (
@@ -206,7 +190,8 @@ export const OrderList: React.FC<OrderListProps> = ({
               ))}
             </select>
 
-            <div className="flex items-center gap-1 text-slate-500">
+            {/* Date Picker */}
+            <div className="flex items-center gap-0.5 shrink-0">
               <input
                 type="date"
                 value={dateFilter}
@@ -218,33 +203,60 @@ export const OrderList: React.FC<OrderListProps> = ({
                     // fallback
                   }
                 }}
-                className="px-1.5 py-1 text-xs rounded-lg border border-slate-200 bg-white font-sans text-slate-800 hover:border-[#5c7eb1] cursor-pointer shadow-2xs outline-none"
+                className="px-2 py-1 text-[11px] rounded-lg border border-slate-200 bg-white font-sans text-slate-700 hover:border-[#5c7eb1] cursor-pointer shadow-2xs outline-none"
                 title="클릭하여 달력 선택 또는 날짜 직접 입력"
               />
               {dateFilter && (
                 <button
                   type="button"
                   onClick={() => setDateFilter('')}
-                  className="text-[10px] text-slate-400 hover:text-slate-700 ml-0.5"
+                  className="text-[10px] text-slate-400 hover:text-slate-700 px-1 cursor-pointer"
+                  title="날짜 필터 초기화"
                 >
-                  초기화
+                  ✕
                 </button>
               )}
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleBulkCopy}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-[#f7e2e2] hover:bg-[#eed7d7] text-[#264c67] border border-[#ecd2d2] transition-colors shadow-2xs whitespace-nowrap ml-auto"
-            title="주문접수 상태인 주문만 골라서 택배 접수용 1줄 텍스트로 일괄 복사합니다."
-          >
-            <Copy className="w-3.5 h-3.5 text-[#5c7eb1]" />
-            <span>택배정보 일괄복사</span>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#5c7eb1] text-[10px] font-medium text-white tracking-normal font-sans leading-none">
-              {receivedOrdersCount}건
-            </span>
-          </button>
+          {/* Right group: 주문검색 (택배정보 일괄복사 바로 왼쪽 배치) + 택배정보 일괄복사 */}
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
+            {/* Search Input: Placed directly on the LEFT of 택배정보 일괄복사 */}
+            <div className="relative flex-1 lg:w-56 shrink-0">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="주문 검색 (이름, 번호, 주소)"
+                className="w-full pl-7 pr-6 py-1 text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#62a4bc] focus:border-[#62a4bc] bg-slate-50/50 hover:bg-white transition-colors"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                  title="검색어 지우기"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Bulk copy button */}
+            <button
+              type="button"
+              onClick={handleBulkCopy}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-[#f7e2e2] hover:bg-[#eed7d7] text-[#264c67] border border-[#ecd2d2] transition-colors shadow-2xs whitespace-nowrap shrink-0 cursor-pointer"
+              title="주문접수 상태인 주문만 골라서 택배 접수용 양식으로 일괄 복사합니다."
+            >
+              <Copy className="w-3 h-3 text-[#5c7eb1]" />
+              <span>택배정보 일괄복사</span>
+              <span className="inline-flex items-center px-1.5 py-0.2 rounded-full bg-[#5c7eb1] text-[10px] font-medium text-white tracking-normal font-sans leading-none">
+                {receivedOrdersCount}건
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
