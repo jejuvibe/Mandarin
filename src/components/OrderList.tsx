@@ -135,65 +135,65 @@ export const OrderList: React.FC<OrderListProps> = ({
       {/* Search & Quick Actions Bar (Ultra-Compact & Slim) */}
       <div className="bg-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border border-slate-200/90 shadow-2xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 sm:gap-2">
-          {/* Left group: Status Filter Tabs + Season + Date */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          {/* Left group: Status Filter Tabs + Season (핸드폰에서도 줄바꿈 없이 한 줄로 유지) */}
+          <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0 overflow-x-auto no-scrollbar">
             {/* Status Buttons: Compact segmented buttons */}
             <div className="inline-flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg shrink-0">
               <button
                 type="button"
                 onClick={() => setStatusFilter('all')}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                className={`px-1.5 sm:px-2 py-1 rounded-md text-[10.5px] sm:text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
                   statusFilter === 'all'
                     ? 'bg-[#5c7eb1] text-white shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span>전체</span>
-                <span className="font-mono text-[10px]">({orders.length})</span>
+                <span className="font-mono text-[9.5px] sm:text-[10px]">({orders.length})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFilter('payment_pending')}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                className={`px-1.5 sm:px-2 py-1 rounded-md text-[10.5px] sm:text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
                   statusFilter === 'payment_pending'
                     ? 'bg-rose-600 text-white shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span>입금대기</span>
-                <span className="font-mono text-[10px]">({paymentPendingCount})</span>
+                <span className="font-mono text-[9.5px] sm:text-[10px]">({paymentPendingCount})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFilter('order_received')}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                className={`px-1.5 sm:px-2 py-1 rounded-md text-[10.5px] sm:text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
                   statusFilter === 'order_received'
                     ? 'bg-[#487294] text-white shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span>주문접수</span>
-                <span className="font-mono text-[10px]">({receivedOrdersCount})</span>
+                <span className="font-mono text-[9.5px] sm:text-[10px]">({receivedOrdersCount})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFilter('delivered')}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
+                className={`px-1.5 sm:px-2 py-1 rounded-md text-[10.5px] sm:text-[11px] font-semibold whitespace-nowrap transition-colors flex items-center gap-0.5 cursor-pointer ${
                   statusFilter === 'delivered'
                     ? 'bg-[#264c67] text-white shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span>배송완료</span>
-                <span className="font-mono text-[10px]">({deliveredCount})</span>
+                <span className="font-mono text-[9.5px] sm:text-[10px]">({deliveredCount})</span>
               </button>
             </div>
 
-            {/* Season Selector */}
+            {/* Season Selector: 줄바꿈 없이 바로 옆에 한 줄로 유지 */}
             <select
               value={seasonFilter}
               onChange={(e) => setSeasonFilter(e.target.value)}
-              className="py-1 px-2 text-[11px] rounded-lg border border-slate-200 font-medium bg-slate-50 text-slate-700 outline-none cursor-pointer hover:border-slate-300 shrink-0"
+              className="py-1 px-1.5 sm:px-2 text-[10.5px] sm:text-[11px] rounded-lg border border-slate-200 font-medium bg-slate-50 text-slate-700 outline-none cursor-pointer hover:border-slate-300 shrink-0"
             >
               <option value="all">모든 시즌</option>
               {availableSeasons.map((sk) => (
