@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="tangerineGlow" cx="35%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#FFA21E"/>
+      <stop offset="45%" stop-color="#FF6F00"/>
+      <stop offset="85%" stop-color="#E84800"/>
+      <stop offset="100%" stop-color="#C23400"/>
+    </radialGradient>
+    <radialGradient id="specularGlow" cx="35%" cy="32%" r="20%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="40%" stop-color="#FFE6CC" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#FFA21E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leafGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="40%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="leafGradLeft" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="40%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#065F46"/>
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#D97706" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- Background squircle for app icon contrast -->
+  <rect width="512" height="512" rx="120" fill="#FFFBF7"/>
+
+  <!-- Subtle bottom ground shadow -->
+  <ellipse cx="256" cy="405" rx="135" ry="22" fill="#E2D0C4" opacity="0.45"/>
+
+  <!-- Tangerine Group with Shadow -->
+  <g filter="url(#softShadow)">
+    <!-- Tangerine Body -->
+    <ellipse cx="256" cy="285" rx="142" ry="122" fill="url(#tangerineGlow)"/>
+    
+    <!-- Top stem dimple -->
+    <path d="M 235 166 Q 256 178 277 166 Q 256 160 235 166 Z" fill="#9A3412" opacity="0.4"/>
+
+    <!-- Stem -->
+    <path d="M 252 174 C 253 158 257 148 261 144 C 265 144 263 158 258 174 Z" fill="#5D3A1A"/>
+
+    <!-- Left Leaf -->
+    <path d="M 253 168 C 220 148 185 145 178 162 C 172 178 208 190 253 168 Z" fill="url(#leafGradLeft)"/>
+    <path d="M 252 168 Q 212 160 180 162" stroke="#6EE7B7" stroke-width="2.5" fill="none" opacity="0.6"/>
+
+    <!-- Right Leaf -->
+    <path d="M 256 166 C 295 130 348 132 362 152 C 372 168 318 194 256 166 Z" fill="url(#leafGradRight)"/>
+    <path d="M 256 166 Q 312 152 358 152" stroke="#A7F3D0" stroke-width="3" fill="none" opacity="0.7"/>
+
+    <!-- Specular Highlight -->
+    <circle cx="210" cy="245" r="45" fill="url(#specularGlow)"/>
+  </g>
+</svg>

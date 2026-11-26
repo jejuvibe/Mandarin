@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Search, Plus, Copy, Package } from 'lucide-react';
+import { Search, Plus, Copy, Package, FileSpreadsheet } from 'lucide-react';
 import { Order, OrderStatus, AppSettings } from '../types';
 import { OrderTable } from './OrderTable';
 import { copyToClipboard } from '../utils/clipboard';
-import { formatCourierRow, formatBulkCourierOrders } from '../utils/courier';
+import { formatBulkCourierOrders } from '../utils/courier';
+import { exportCourierExcel } from '../utils/excelExport';
 import { getOrderSeasonKey, getAllSeasonKeys } from '../utils/season';
 import { useToast } from './Toast';
 
@@ -31,7 +32,6 @@ export const OrderList: React.FC<OrderListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all');
   const [seasonFilter, setSeasonFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('');
   const { showToast } = useToast();
 
   const availableSeasons = getAllSeasonKeys(orders, settings.customSeasons, settings.deletedSeasons);
@@ -65,11 +65,6 @@ export const OrderList: React.FC<OrderListProps> = ({
       if (orderSeason !== seasonFilter) return false;
     }
 
-    // Date filter
-    if (dateFilter && order.dispatchDate !== dateFilter) {
-      return false;
-    }
-
     return true;
   });
 
@@ -95,6 +90,24 @@ export const OrderList: React.FC<OrderListProps> = ({
     const ok = await copyToClipboard(fullText);
     if (ok) {
       showToast(`[주문접수] ${targetOrders.length}건의 택배정보가 발송내역별로 복사되었습니다!`, 'copy');
+    }
+  };
+
+  // Export Excel: Target courier-ready orders (or current filtered orders)
+  const handleExportExcel = () => {
+    const targetOrders = filteredOrders.filter(
+      (o) => o.status === 'order_received' || o.status === 'preparing' || o.status === 'in_transit'
+    );
+    const finalOrders = targetOrders.length > 0 ? targetOrders : filteredOrders;
+
+    if (finalOrders.length === 0) {
+      showToast('엑셀로 다운로드할 주문 내역이 없습니다.', 'info');
+      return;
+    }
+
+    const ok = exportCourierExcel(finalOrders, '택배접수목록');
+    if (ok) {
+      showToast(`택배 접수용 엑셀 파일(${finalOrders.length}건)이 다운로드되었습니다.`, 'success');
     }
   };
 
@@ -189,53 +202,25 @@ export const OrderList: React.FC<OrderListProps> = ({
                 </option>
               ))}
             </select>
-
-            {/* Date Picker */}
-            <div className="flex items-center gap-0.5 shrink-0">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                onClick={(e) => {
-                  try {
-                    (e.currentTarget as HTMLInputElement).showPicker?.();
-                  } catch {
-                    // fallback
-                  }
-                }}
-                className="px-2 py-1 text-[11px] rounded-lg border border-slate-200 bg-white font-sans text-slate-700 hover:border-[#5c7eb1] cursor-pointer shadow-2xs outline-none"
-                title="클릭하여 달력 선택 또는 날짜 직접 입력"
-              />
-              {dateFilter && (
-                <button
-                  type="button"
-                  onClick={() => setDateFilter('')}
-                  className="text-[10px] text-slate-400 hover:text-slate-700 px-1 cursor-pointer"
-                  title="날짜 필터 초기화"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
           </div>
 
-          {/* Right group: 주문검색 (택배정보 일괄복사 바로 왼쪽 배치) + 택배정보 일괄복사 */}
-          <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
-            {/* Search Input: Placed directly on the LEFT of 택배정보 일괄복사 */}
-            <div className="relative flex-1 lg:w-56 shrink-0">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-400" />
+          {/* Right group: 주문검색 바로 옆에 아담한 크기의 일괄복사 & 엑셀다운 버튼 가로 일렬 배치 */}
+          <div className="flex items-center gap-1 sm:gap-1.5 w-full lg:w-auto">
+            {/* Search Input: min-w-0으로 핸드폰에서도 크기가 유연하게 줄어들어 버튼이 잘리지 않음 */}
+            <div className="relative min-w-[65px] flex-1 lg:w-56">
+              <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="주문 검색 (이름, 번호, 주소)"
-                className="w-full pl-7 pr-6 py-1 text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#62a4bc] focus:border-[#62a4bc] bg-slate-50/50 hover:bg-white transition-colors"
+                placeholder="주문 검색"
+                className="w-full pl-6 pr-5 py-1 text-[11px] sm:text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:ring-1 focus:ring-[#62a4bc] focus:border-[#62a4bc] bg-slate-50/50 hover:bg-white transition-colors"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-1 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                  className="absolute right-1.5 top-1 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
                   title="검색어 지우기"
                 >
                   ✕
@@ -243,11 +228,11 @@ export const OrderList: React.FC<OrderListProps> = ({
               )}
             </div>
 
-            {/* Bulk copy button */}
+            {/* Bulk copy button (예전처럼 아담한 크기) */}
             <button
               type="button"
               onClick={handleBulkCopy}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-[#f7e2e2] hover:bg-[#eed7d7] text-[#264c67] border border-[#ecd2d2] transition-colors shadow-2xs whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-lg bg-[#f7e2e2] hover:bg-[#eed7d7] text-[#264c67] border border-[#ecd2d2] transition-colors shadow-2xs whitespace-nowrap shrink-0 cursor-pointer"
               title="주문접수 상태인 주문만 골라서 택배 접수용 양식으로 일괄 복사합니다."
             >
               <Copy className="w-3 h-3 text-[#5c7eb1]" />
@@ -255,6 +240,17 @@ export const OrderList: React.FC<OrderListProps> = ({
               <span className="inline-flex items-center px-1.5 py-0.2 rounded-full bg-[#5c7eb1] text-[10px] font-medium text-white tracking-normal font-sans leading-none">
                 {receivedOrdersCount}건
               </span>
+            </button>
+
+            {/* Courier Excel Download Button (예전처럼 아담한 크기) */}
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap shrink-0 cursor-pointer"
+              title="이름, 전화번호, 배송지주소, 품목, 수량이 포함된 택배 접수용 엑셀(.xlsx) 파일을 다운로드합니다."
+            >
+              <FileSpreadsheet className="w-3 h-3 text-emerald-600" />
+              <span>택배정보 엑셀다운</span>
             </button>
           </div>
         </div>
@@ -282,7 +278,6 @@ export const OrderList: React.FC<OrderListProps> = ({
               onClick={() => {
                 setSearchTerm('');
                 setStatusFilter('all');
-                setDateFilter('');
                 setSeasonFilter('all');
               }}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#5c7eb1] hover:bg-[#4d6c99] rounded-xl transition-colors cursor-pointer shadow-xs"

@@ -255,7 +255,7 @@ export const NewOrderForm: React.FC<NewOrderFormProps> = ({
       items.push({
         id: `ITEM-10-${Date.now()}`,
         type: '10kg',
-        name: '노지 감귤 10kg',
+        name: '10kg',
         quantity: qty10kg,
         unitPrice: unitPrice10kg,
       });
